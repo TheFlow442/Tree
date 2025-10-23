@@ -11,17 +11,22 @@ export default function SplashPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isUserLoading) {
-        if (user) {
-          router.push('/');
-        } else {
-          router.push('/login');
-        }
-      }
-    }, 2000); // 2 seconds delay
+    // If authentication is still loading, do nothing and wait.
+    if (isUserLoading) {
+      return;
+    }
 
+    const timer = setTimeout(() => {
+      if (user) {
+        router.push('/');
+      } else {
+        router.push('/login');
+      }
+    }, 100); // Reduced delay to 100 milliseconds
+
+    // Cleanup the timer if the component unmounts.
     return () => clearTimeout(timer);
+
   }, [user, isUserLoading, router]);
 
   return (
