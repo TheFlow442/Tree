@@ -39,8 +39,10 @@ export default function LoginPage() {
   const firestore = useFirestore();
 
   useEffect(() => {
+    // If the user is authenticated, redirect to the home page.
+    // This page is now the main entry point after the splash.
     if (!isUserLoading && user) {
-      router.push('/home');
+      router.replace('/home');
     }
   }, [user, isUserLoading, router]);
 
@@ -95,14 +97,16 @@ export default function LoginPage() {
       });
   };
   
-    if (isUserLoading || user) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-background">
-                <div className="w-16 h-16 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+  // Display a loading spinner while checking auth state or if the user is already logged in
+  if (isUserLoading || user) {
+      return (
+          <div className="flex items-center justify-center h-screen bg-background">
+              <div className="w-16 h-16 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
+          </div>
+      );
+  }
 
+  // Only render the login form if the user is not authenticated and auth check is complete.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
        <div className="absolute top-8">

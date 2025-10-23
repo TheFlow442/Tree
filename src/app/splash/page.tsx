@@ -9,12 +9,8 @@ export default function SplashPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push('/home');
-    }, 1000); // A 1-second delay for the splash screen effect.
-
-    // Cleanup the timer if the component unmounts.
-    return () => clearTimeout(timer);
+    // Immediately redirect to the login page, which will handle auth checks.
+    router.replace('/login');
   }, [router]);
 
   return (
