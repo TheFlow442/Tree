@@ -56,49 +56,43 @@ export default function LoginPage() {
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
-    try {
-      initiateEmailSignIn(auth, values.email, values.password);
-      // The onAuthStateChanged listener will handle the redirect
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: error.message || 'An unknown error occurred.',
+    initiateEmailSignIn(auth, values.email, values.password)
+      .catch((error: any) => {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'Invalid email or password.',
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-      setIsLoading(false);
-    }
   };
 
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
-    try {
-      // First, create the user in Firebase Auth.
-      const userCredential = await initiateEmailSignUp(auth, values.email, values.password);
-
-      // After successful creation, the onAuthStateChanged listener will trigger.
-      // We can get the user from there, or we can use the user from the credential if available.
-      const newUser = auth.currentUser; // Should be set by the time we get here.
-
-      if (newUser) {
-        // Now create the user document in Firestore.
-        const userDocRef = doc(firestore, 'users', newUser.uid);
-        await setDocumentNonBlocking(userDocRef, {
-          id: newUser.uid,
-          email: newUser.email,
-          registrationDate: serverTimestamp(),
-        }, {});
-      }
-      
-      // The onAuthStateChanged listener will handle redirecting to the main app
-      
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Registration Failed',
-        description: error.message || 'Could not create account.',
+    initiateEmailSignUp(auth, values.email, values.password)
+      .then((userCredential) => {
+        if (userCredential && userCredential.user) {
+            const newUser = userCredential.user;
+            const userDocRef = doc(firestore, 'users', newUser.uid);
+            setDocumentNonBlocking(userDocRef, {
+              id: newUser.uid,
+              email: newUser.email,
+              registrationDate: serverTimestamp(),
+            }, {});
+        }
+      })
+      .catch((error: any) => {
+        toast({
+          variant: 'destructive',
+          title: 'Registration Failed',
+          description: error.message || 'Could not create account.',
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-      setIsLoading(false);
-    }
   };
   
     if (isUserLoading || user) {
