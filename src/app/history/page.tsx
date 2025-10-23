@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { HISTORICAL_DATA } from '@/lib/data';
 import { downloadCSV } from '@/lib/csv';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 
 export default function HistoryPage() {
   const { user, isUserLoading } = useUser();
@@ -97,7 +98,7 @@ export default function HistoryPage() {
       </Sidebar>
       <div className="flex flex-col flex-1">
         <Header />
-        <main className="flex-1 p-4 sm:p-6 md:p-8">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 grid gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Dataset Management</CardTitle>
@@ -120,6 +121,31 @@ export default function HistoryPage() {
                   <Download className="mr-2" /> Download CSV
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader>
+              <CardTitle>Historical Data</CardTitle>
+              <CardDescription>A view of the monthly energy consumption data.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableCaption>A list of your recent energy consumption records.</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Month</TableHead>
+                    <TableHead className="text-right">Energy Consumption (kWh)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {HISTORICAL_DATA.map((data) => (
+                    <TableRow key={data.month}>
+                      <TableCell className="font-medium">{data.month}</TableCell>
+                      <TableCell className="text-right">{data['Energy Consumption (kWh)']}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </main>
