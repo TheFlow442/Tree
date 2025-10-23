@@ -20,8 +20,10 @@ export type HistoricalDataPoint = {
   "Energy Consumption (kWh)": number;
 };
 
+// This type is now extended by the Genkit flow's output type
 export type Prediction = {
   predictedConsumption: number;
   confidenceInterval: number;
   analysis: string;
+  userUsagePatterns: string;
 };

@@ -1,7 +1,7 @@
 'use server';
 
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
-import { predictEnergyConsumption } from '@/ai/flows/predict-energy-consumption';
+import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
 
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
@@ -21,7 +21,7 @@ export async function runEnergyPrediction() {
       historicalData: historicalDataString,
       modelName: 'energy_consumption_v1',
     });
-    return { success: true, data: result };
+    return { success: true, data: result as PredictEnergyConsumptionOutput };
   } catch (error) {
     console.error('Error in predictEnergyConsumption:', error);
     return { success: false, error: 'Failed to predict energy consumption.' };

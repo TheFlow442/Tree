@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview An AI agent for intelligently managing five switches based on real-time parameters, predicted energy consumption, and user preferences.
+ * @fileOverview An AI agent for intelligently managing five switches based on real-time parameters, predicted energy consumption, and user preferences, utilizing a deployed Firebase ML model.
  *
  * - intelligentSwitchControl - A function that handles the intelligent switch control process.
  * - IntelligentSwitchControlInput - The input type for the intelligentSwitchControl function.
@@ -15,8 +15,9 @@ const IntelligentSwitchControlInputSchema = z.object({
   voltage: z.number().describe('The current voltage of the solar system.'),
   current: z.number().describe('The current current of the solar system.'),
   batteryLevel: z.number().describe('The current battery level of the solar system (0-100).'),
-  predictedUsage: z.number().describe('The predicted energy consumption for the next period.'),
+  predictedUsage: z.number().describe('The predicted energy consumption for the next period from the Firebase ML model.'),
   userPreferences: z.string().describe('The user preferences for energy usage and switch control.'),
+  userUsagePatterns: z.string().describe('Analysis of historical user usage patterns from the Firebase ML model.')
 });
 export type IntelligentSwitchControlInput = z.infer<typeof IntelligentSwitchControlInputSchema>;
 
@@ -38,13 +39,13 @@ const prompt = ai.definePrompt({
   name: 'intelligentSwitchControlPrompt',
   input: {schema: IntelligentSwitchControlInputSchema},
   output: {schema: IntelligentSwitchControlOutputSchema},
-  prompt: `You are an AI assistant designed to intelligently manage five switches in a smart solar system.
+  prompt: `You are an AI assistant designed to intelligently manage five switches in a smart solar system, using insights from a deployed Firebase ML model.
 
-  Based on the current voltage ({{{voltage}}}V), current ({{{current}}}A), battery level ({{{batteryLevel}}}%), predicted energy consumption ({{{predictedUsage}}} units), and user preferences ({{{userPreferences}}}), determine the optimal state for each of the five switches.
+  Based on the current voltage ({{{voltage}}}V), current ({{{current}}}A), battery level ({{{batteryLevel}}}%), ML-predicted energy consumption ({{{predictedUsage}}} units), user preferences ("{{{userPreferences}}}"), and ML-derived user usage patterns ("{{{userUsagePatterns}}}"), determine the optimal state for each of the five switches.
 
-  Provide a clear reasoning for your recommendations.  The reasoning should take into account the desire to optimize energy usage and maintain desired battery levels, while also taking into account user preferences.
+  Provide a clear reasoning for your recommendations. The reasoning must incorporate the user usage patterns and prioritize energy optimization and battery health while respecting user preferences.
 
-  Output the recommended state for each switch (true for on, false for off) and your reasoning in the JSON format specified by the output schema.  Make sure the reasoning is easily understandable by a non-expert user.
+  Output the recommended state for each switch (true for on, false for off) and your reasoning in the JSON format specified by the output schema. Make sure the reasoning is easily understandable by a non-expert user.
   `,
 });
 

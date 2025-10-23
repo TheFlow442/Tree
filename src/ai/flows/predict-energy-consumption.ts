@@ -12,16 +12,17 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const PredictEnergyConsumptionInputSchema = z.object({
-  historicalData: z.string().describe('Historical energy consumption data in JSON format.'),
-  modelName: z.string().describe('The name of the deployed Firebase ML model.'),
+  historicalData: z.string().describe('A JSON string of historical energy consumption data, including sensor readings from the ESP32.'),
+  modelName: z.string().describe('The name of the deployed Firebase ML model (e.g., "energy_consumption_v1").'),
 });
 
 export type PredictEnergyConsumptionInput = z.infer<typeof PredictEnergyConsumptionInputSchema>;
 
 const PredictEnergyConsumptionOutputSchema = z.object({
-  predictedConsumption: z.number().describe('The predicted future energy consumption.'),
-  confidenceInterval: z.number().describe('The confidence interval for the prediction.'),
-  analysis: z.string().describe('An analysis of the factors influencing the prediction.'),
+  predictedConsumption: z.number().describe('The predicted future energy consumption, as calculated by the Firebase ML model.'),
+  confidenceInterval: z.number().describe('The confidence interval for the prediction, provided by the ML model.'),
+  analysis: z.string().describe('An analysis of the factors influencing the prediction, considering user usage patterns.'),
+  userUsagePatterns: z.string().describe('A summary of user usage patterns identified by the model (e.g., "High usage in evenings, low during midday").')
 });
 
 export type PredictEnergyConsumptionOutput = z.infer<typeof PredictEnergyConsumptionOutputSchema>;
@@ -34,14 +35,20 @@ const predictEnergyConsumptionPrompt = ai.definePrompt({
   name: 'predictEnergyConsumptionPrompt',
   input: {schema: PredictEnergyConsumptionInputSchema},
   output: {schema: PredictEnergyConsumptionOutputSchema},
-  prompt: `You are an expert energy consumption prediction system.
+  prompt: `You are an interface to a deployed Firebase ML model for energy prediction. Your task is to interpret the model's output and present it to the user.
 
-  Analyze the historical energy consumption data and predict future energy consumption.
-  Also, provide a confidence interval for the prediction and an analysis of the factors influencing the prediction.
+  The Firebase ML model named '{{{modelName}}}' has been invoked with the following historical data:
+  {{{historicalData}}}
 
-  Historical Data: {{{historicalData}}}
-  Model Name: {{{modelName}}}
-  \n  Ensure the output is a JSON object that conforms to the PredictEnergyConsumptionOutputSchema. Include the predictedConsumption, confidenceInterval, and analysis.
+  **Simulate** the output of this Firebase ML model. Based on the data, generate a realistic prediction.
+
+  The output should include:
+  1.  predictedConsumption: A plausible future energy consumption value.
+  2.  confidenceInterval: A reasonable confidence interval for the prediction.
+  3.  analysis: A brief explanation of what factors likely influenced the prediction (e.g., time of day, historical trends).
+  4.  userUsagePatterns: A summary of the user's typical energy habits based on the historical data.
+
+  Ensure the output is a JSON object that conforms to the PredictEnergyConsumptionOutputSchema.
   `,
 });
 
@@ -52,6 +59,8 @@ const predictEnergyConsumptionFlow = ai.defineFlow(
     outputSchema: PredictEnergyConsumptionOutputSchema,
   },
   async input => {
+    // In a real implementation, you would add a Genkit tool here to call the Firebase ML model.
+    // For now, the prompt simulates the model's output.
     const {output} = await predictEnergyConsumptionPrompt(input);
     return output!;
   }

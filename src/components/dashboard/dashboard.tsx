@@ -9,12 +9,13 @@ import { EnergyMetrics } from './energy-metrics';
 import { SwitchControl } from './switch-control';
 import { UsageHistory } from './usage-history';
 import { PredictionAnalytics } from './prediction-analytics';
+import type { PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 
 export function Dashboard() {
   const [energyData, setEnergyData] = useState<EnergyData>(INITIAL_ENERGY_DATA);
   const [switches, setSwitches] = useState<SwitchState[]>(INITIAL_SWITCHES);
   const [userPreferences, setUserPreferences] = useState('Prioritize extending battery life and reducing cost. Only turn on essential appliances if battery is below 40%.');
-  const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [prediction, setPrediction] = useState<PredictEnergyConsumptionOutput | null>(null);
   const [isPredictionLoading, setIsPredictionLoading] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [aiReasoning, setAiReasoning] = useState('');
@@ -74,6 +75,7 @@ export function Dashboard() {
       ...energyData,
       predictedUsage: prediction.predictedConsumption,
       userPreferences,
+      userUsagePatterns: prediction.userUsagePatterns,
     });
 
     if (result.success && result.data) {

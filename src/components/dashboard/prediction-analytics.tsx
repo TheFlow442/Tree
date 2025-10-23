@@ -1,10 +1,10 @@
-import type { Prediction } from '@/lib/types';
+import type { PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Zap } from 'lucide-react';
+import { Loader2, Zap, BrainCircuit } from 'lucide-react';
 
 type PredictionAnalyticsProps = {
-  prediction: Prediction | null;
+  prediction: PredictEnergyConsumptionOutput | null;
   isLoading: boolean;
   onPredict: () => void;
 };
@@ -27,6 +27,10 @@ export function PredictionAnalytics({ prediction, isLoading, onPredict }: Predic
               <p className="font-semibold text-muted-foreground">Confidence Interval</p>
               <p className="text-foreground/80">&plusmn;{prediction.confidenceInterval.toFixed(2)} kWh</p>
             </div>
+             <div>
+              <p className="font-semibold text-muted-foreground">User Usage Patterns</p>
+              <p className="text-foreground/80 italic">"{prediction.userUsagePatterns}"</p>
+            </div>
             <div>
               <p className="font-semibold text-muted-foreground">AI Analysis</p>
               <p className="text-foreground/80 italic">"{prediction.analysis}"</p>
@@ -34,11 +38,12 @@ export function PredictionAnalytics({ prediction, isLoading, onPredict }: Predic
           </div>
         ) : (
           <div className="text-center text-muted-foreground py-8">
-            <p>Click the button to generate an energy prediction.</p>
+             <Zap className="mx-auto h-12 w-12 text-gray-300" />
+            <p className="mt-4">Click the button to generate an energy prediction.</p>
           </div>
         )}
         <Button onClick={onPredict} disabled={isLoading} className="w-full">
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
           {isLoading ? 'Predicting...' : 'Predict Consumption'}
         </Button>
       </CardContent>

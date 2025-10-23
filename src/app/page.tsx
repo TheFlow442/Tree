@@ -2,6 +2,7 @@ import { Dashboard } from '@/components/dashboard/dashboard';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { LineChart, History, Settings } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -9,21 +10,27 @@ export default function Home() {
       <Sidebar>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#" isActive>
-              <LineChart />
-              Prediction
+            <SidebarMenuButton asChild isActive>
+              <Link href="/">
+                <LineChart />
+                Prediction
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
-              <History />
-              History
+            <SidebarMenuButton asChild>
+              <Link href="/history">
+                <History />
+                History
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
-              <Settings />
-              Setting
+            <SidebarMenuButton asChild>
+               <Link href="/settings">
+                <Settings />
+                Setting
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
