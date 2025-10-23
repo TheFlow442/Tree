@@ -1,7 +1,10 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { LineChart, History, Settings, Wifi, Save, Loader2 } from 'lucide-react';
@@ -12,9 +15,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
+  const { user, isUserLoading: isUserLoadingAuth } = useUser();
+  const router = useRouter();
   const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isUserLoadingAuth && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoadingAuth, router]);
 
   const handleSave = () => {
     setIsLoading(true);
@@ -27,6 +38,14 @@ export default function SettingsPage() {
       });
     }, 1500);
   };
+  
+  if (isUserLoadingAuth || !user) {
+    return (
+        <div className="flex items-center justify-center h-screen bg-background">
+            <div className="w-16 h-16 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
+        </div>
+    );
+  }
 
   return (
     <SidebarProvider>
