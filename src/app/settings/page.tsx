@@ -4,10 +4,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTheme } from "next-themes"
 import { useUser } from '@/firebase';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LineChart, History, Settings, Wifi, Save, Loader2 } from 'lucide-react';
+import { LineChart, History, Settings, Wifi, Save, Loader2, Moon, Sun } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function SettingsPage() {
   const { user, isUserLoading: isUserLoadingAuth } = useUser();
   const router = useRouter();
+  const { setTheme } = useTheme()
   const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -79,7 +81,25 @@ export default function SettingsPage() {
       </Sidebar>
       <div className="flex flex-col flex-1">
         <Header />
-        <main className="flex-1 p-4 sm:p-6 md:p-8">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>
+                Switch between light and dark mode.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <div className="grid grid-cols-2 gap-4">
+                <Button variant="outline" onClick={() => setTheme("light")}>
+                  <Sun className="mr-2" /> Light
+                </Button>
+                 <Button variant="outline" onClick={() => setTheme("dark")}>
+                  <Moon className="mr-2" /> Dark
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>ESP32 Integration</CardTitle>
