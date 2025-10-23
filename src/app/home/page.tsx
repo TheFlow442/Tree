@@ -10,7 +10,7 @@ import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButt
 import { LineChart, History, Settings } from 'lucide-react';
 import Link from 'next/link';
 
-export default function Home() {
+export default function HomePage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
 
@@ -34,7 +34,7 @@ export default function Home() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive>
-              <Link href="/">
+              <Link href="/home">
                 <LineChart />
                 Prediction
               </Link>

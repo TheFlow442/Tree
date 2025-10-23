@@ -55,7 +55,7 @@ export default function SettingsPage() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link href="/">
+              <Link href="/home">
                 <LineChart />
                 Prediction
               </Link>

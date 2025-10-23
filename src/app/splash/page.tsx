@@ -18,7 +18,7 @@ export default function SplashPage() {
 
     const timer = setTimeout(() => {
       if (user) {
-        router.push('/');
+        router.push('/home');
       } else {
         router.push('/login');
       }

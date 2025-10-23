@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/');
+      router.push('/home');
     }
   }, [user, isUserLoading, router]);
 
