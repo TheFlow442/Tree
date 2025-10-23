@@ -30,7 +30,7 @@ export function Dashboard() {
         return {
           voltage: newVoltage,
           current: newCurrent,
-          batteryLevel: Math.max(0, Math.min(100, Math.round(prevData.batteryLevel + (Math.random() - 0.51) * 2))),
+          batteryLevel: Math.max(0, Math.min(100, Math.round(prevData.batteryLevel - Math.random() * 0.5))),
           power: parseFloat((newVoltage * newCurrent).toFixed(1)),
           temperature: parseFloat((prevData.temperature + (Math.random() - 0.5) * 0.5).toFixed(1)),
           humidity: Math.max(0, Math.min(100, Math.round(prevData.humidity + (Math.random() - 0.5) * 1))),
