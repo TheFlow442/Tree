@@ -7,7 +7,7 @@ type EnergyMetricsProps = {
 
 export function EnergyMetrics({ energyData }: EnergyMetricsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <EnergyMetric label="Voltage" value={`${energyData.voltage} V`} />
       <EnergyMetric label="Current" value={`${energyData.current} A`} />
       <EnergyMetric label="Power" value={`${energyData.power} W`} />

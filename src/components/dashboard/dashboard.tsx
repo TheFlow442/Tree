@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { runEnergyPrediction, runIntelligentSwitchControl } from '@/app/actions';
 import { INITIAL_ENERGY_DATA, INITIAL_SWITCHES } from '@/lib/data';
-import type { EnergyData, SwitchState, Prediction } from '@/lib/types';
+import type { EnergyData, SwitchState } from '@/lib/types';
 import { EnergyMetrics } from './energy-metrics';
 import { SwitchControl } from './switch-control';
 import { UsageHistory } from './usage-history';
@@ -22,6 +22,7 @@ export function Dashboard() {
   const { toast } = useToast();
 
   useEffect(() => {
+    handlePrediction(); // Initial prediction on load
     const interval = setInterval(() => {
       setEnergyData(prevData => {
         const newVoltage = parseFloat((prevData.voltage + (Math.random() - 0.5) * 2).toFixed(1));
@@ -48,8 +49,8 @@ export function Dashboard() {
     if (result.success && result.data) {
       setPrediction(result.data);
       toast({
-        title: "Prediction Successful",
-        description: "Future energy consumption has been predicted.",
+        title: "Prediction Ready",
+        description: "Future energy consumption has been forecasted.",
       });
     } else {
       toast({
@@ -105,8 +106,8 @@ export function Dashboard() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:grid-cols-4">
-      <div className="lg:col-span-2 xl:col-span-3 space-y-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="lg:col-span-8 xl:col-span-9 space-y-6">
         <EnergyMetrics energyData={energyData} />
         <SwitchControl
           switches={switches}
@@ -120,13 +121,13 @@ export function Dashboard() {
         />
       </div>
 
-      <div className="lg:col-span-1 xl:col-span-1 space-y-6">
-        <UsageHistory />
-        <PredictionAnalytics
+      <div className="lg:col-span-4 xl:col-span-3 space-y-6">
+         <PredictionAnalytics
           prediction={prediction}
           isLoading={isPredictionLoading}
           onPredict={handlePrediction}
         />
+        <UsageHistory />
       </div>
     </div>
   );

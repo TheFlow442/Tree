@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const switchIcons: { [key: string]: React.ReactNode } = {
   "Living Room Lights": <Lightbulb className="h-5 w-5" />,
@@ -35,15 +36,15 @@ export function SwitchControl({
   onOptimize
 }: SwitchControlProps) {
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg bg-card/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="font-headline">Smart Switch Control</CardTitle>
+        <CardTitle className="font-headline text-xl">Smart Switch Control</CardTitle>
         <CardDescription>Manage your devices manually or use AI for optimal energy use.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {switches.map(s => (
-            <div key={s.id} className="flex items-center justify-between p-4 border rounded-lg bg-background hover:bg-muted/50 transition-colors">
+            <div key={s.id} className="flex items-center justify-between p-4 border rounded-lg bg-background/50 hover:bg-muted/50 transition-colors">
               <div className="flex items-center space-x-3">
                 <div className="text-primary">{switchIcons[s.name]}</div>
                 <label htmlFor={`switch-${s.id}`} className="text-sm font-medium">{s.name}</label>
@@ -70,17 +71,21 @@ export function SwitchControl({
           </div>
         )}
         
-        <div>
-          <label htmlFor="preferences" className="text-sm font-medium">User Preferences</label>
+        <div className="grid gap-2">
+          <Label htmlFor="preferences" className="font-semibold">User Preferences</Label>
           <Textarea
             id="preferences"
             value={userPreferences}
             onChange={e => onPreferencesChange(e.target.value)}
             placeholder="e.g., Prioritize battery life, turn off non-essentials at night..."
-            className="mt-2"
+            className="mt-1 bg-background/50"
+            rows={3}
           />
+           <p className="text-xs text-muted-foreground">
+            Guide the AI's decisions by specifying what's important to you.
+          </p>
         </div>
-        <Button onClick={onOptimize} disabled={isOptimizing || !isPredictionAvailable}>
+        <Button onClick={onOptimize} disabled={isOptimizing || !isPredictionAvailable} size="lg" className="w-full sm:w-auto">
           {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
           {isOptimizing ? 'Optimizing...' : 'Optimize with AI'}
         </Button>
