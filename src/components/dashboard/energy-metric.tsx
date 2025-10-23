@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Battery, Zap, Gauge, Power } from 'lucide-react';
+import { Battery, Zap, Gauge, Power, Thermometer, Droplets, Home, Bolt } from 'lucide-react';
 
 interface EnergyMetricProps {
-  label: 'Voltage' | 'Current' | 'Power' | 'Battery';
+  label: 'Voltage' | 'Current' | 'Power' | 'Battery' | 'Temperature' | 'Humidity' | 'Total Consumption' | 'Energy Remain';
   value: string;
   batteryLevel?: number;
 }
@@ -21,6 +21,10 @@ export function EnergyMetric({ label, value, batteryLevel }: EnergyMetricProps) 
       case 'Current': return <Zap className="h-6 w-6 text-muted-foreground" />;
       case 'Power': return <Power className="h-6 w-6 text-muted-foreground" />;
       case 'Battery': return <Battery className={cn("h-6 w-6", batteryLevel !== undefined ? getBatteryColor(batteryLevel) : 'text-muted-foreground')} />;
+      case 'Temperature': return <Thermometer className="h-6 w-6 text-muted-foreground" />;
+      case 'Humidity': return <Droplets className="h-6 w-6 text-muted-foreground" />;
+      case 'Total Consumption': return <Home className="h-6 w-6 text-muted-foreground" />;
+      case 'Energy Remain': return <Bolt className="h-6 w-6 text-muted-foreground" />;
       default: return null;
     }
   }

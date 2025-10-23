@@ -12,6 +12,10 @@ export function EnergyMetrics({ energyData }: EnergyMetricsProps) {
       <EnergyMetric label="Current" value={`${energyData.current} A`} />
       <EnergyMetric label="Power" value={`${energyData.power} W`} />
       <EnergyMetric label="Battery" value={`${energyData.batteryLevel}%`} batteryLevel={energyData.batteryLevel} />
+      <EnergyMetric label="Temperature" value={`${energyData.temperature}°C`} />
+      <EnergyMetric label="Humidity" value={`${energyData.humidity}%`} />
+      <EnergyMetric label="Total Consumption" value={`${energyData.totalConsumption} kWh`} />
+      <EnergyMetric label="Energy Remain" value={`${energyData.energyRemain} kWh`} />
     </div>
   );
 }

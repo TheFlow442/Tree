@@ -3,6 +3,10 @@ export type EnergyData = {
   current: number;
   batteryLevel: number;
   power: number;
+  temperature: number;
+  humidity: number;
+  totalConsumption: number;
+  energyRemain: number;
 };
 
 export type SwitchState = {

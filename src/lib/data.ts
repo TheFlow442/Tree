@@ -5,6 +5,10 @@ export const INITIAL_ENERGY_DATA: EnergyData = {
   current: 5.2,
   batteryLevel: 85,
   power: 1198.6,
+  temperature: 25.5,
+  humidity: 60,
+  totalConsumption: 1234.5,
+  energyRemain: 45.2,
 };
 
 export const INITIAL_SWITCHES: SwitchState[] = [

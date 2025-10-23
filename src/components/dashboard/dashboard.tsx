@@ -30,6 +30,10 @@ export function Dashboard() {
           current: newCurrent,
           batteryLevel: Math.max(0, Math.min(100, Math.round(prevData.batteryLevel + (Math.random() - 0.51) * 2))),
           power: parseFloat((newVoltage * newCurrent).toFixed(1)),
+          temperature: parseFloat((prevData.temperature + (Math.random() - 0.5) * 0.5).toFixed(1)),
+          humidity: Math.max(0, Math.min(100, Math.round(prevData.humidity + (Math.random() - 0.5) * 1))),
+          totalConsumption: parseFloat((prevData.totalConsumption + Math.random() * 0.1).toFixed(2)),
+          energyRemain: parseFloat((prevData.energyRemain - Math.random() * 0.05).toFixed(2)),
         }
       });
     }, 2000);
