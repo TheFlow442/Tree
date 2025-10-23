@@ -19,12 +19,6 @@ export default function Home() {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
-  
-  // Redirect to splash on initial load if user state is not determined yet.
-  useEffect(() => {
-    router.push('/splash');
-  }, [router]);
-
 
   if (isUserLoading || !user) {
     return (
