@@ -3,31 +3,19 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
 import { Logo } from '@/components/logo';
 
 export default function SplashPage() {
-  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    // If authentication is still loading, do nothing and wait.
-    if (isUserLoading) {
-      return;
-    }
-
     const timer = setTimeout(() => {
-      if (user) {
-        router.push('/home');
-      } else {
-        router.push('/login');
-      }
-    }, 100); // Reduced delay to 100 milliseconds
+      router.push('/home');
+    }, 1000); // A 1-second delay for the splash screen effect.
 
     // Cleanup the timer if the component unmounts.
     return () => clearTimeout(timer);
-
-  }, [user, isUserLoading, router]);
+  }, [router]);
 
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center bg-background text-foreground">

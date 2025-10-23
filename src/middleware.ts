@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // The root of the site is the splash screen.
   if (pathname === '/') {
     return NextResponse.rewrite(new URL('/splash', request.url))
   }
