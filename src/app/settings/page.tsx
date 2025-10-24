@@ -6,10 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from "next-themes"
 import { useUser } from '@/firebase';
+import { firebaseConfig } from '@/firebase/config';
 import { generateApiKey, getApiKey } from '@/app/actions';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LineChart, History, Settings, Wifi, Save, Loader2, Moon, Sun, KeyRound, Copy, Check } from 'lucide-react';
+import { LineChart, History, Settings, Wifi, Loader2, Moon, Sun, KeyRound, Copy, Check, Info } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,10 +22,11 @@ export default function SettingsPage() {
   const { user, isUserLoading: isUserLoadingAuth } = useUser();
   const router = useRouter();
   const { setTheme } = useTheme()
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [deviceApiKey, setDeviceApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [hasCopied, setHasCopied] = useState(false);
+  const [hasCopiedDeviceKey, setHasCopiedDeviceKey] = useState(false);
+  const [hasCopiedProjectKey, setHasCopiedProjectKey] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,12 +40,12 @@ export default function SettingsPage() {
       setIsLoading(true);
       getApiKey(user.uid).then(result => {
         if(result.success) {
-          setApiKey(result.data.apiKey);
+          setDeviceApiKey(result.data.apiKey);
         } else {
            toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not fetch your API key.",
+            description: "Could not fetch your Device API key.",
           });
         }
         setIsLoading(false);
@@ -56,10 +58,10 @@ export default function SettingsPage() {
     setIsGenerating(true);
     const result = await generateApiKey(user.uid);
     if (result.success && result.data?.apiKey) {
-      setApiKey(result.data.apiKey);
+      setDeviceApiKey(result.data.apiKey);
       toast({
-        title: "API Key Generated",
-        description: "Your new API key is ready to be used.",
+        title: "Device API Key Generated",
+        description: "Your new device API key is ready.",
       });
     } else {
       toast({
@@ -71,13 +73,16 @@ export default function SettingsPage() {
     setIsGenerating(false);
   };
   
-  const copyToClipboard = () => {
-    if (apiKey) {
-      navigator.clipboard.writeText(apiKey);
-      setHasCopied(true);
-      toast({ title: "Copied to clipboard!" });
-      setTimeout(() => setHasCopied(false), 2000);
+  const copyToClipboard = (key: string, type: 'device' | 'project') => {
+    navigator.clipboard.writeText(key);
+    if (type === 'device') {
+      setHasCopiedDeviceKey(true);
+      setTimeout(() => setHasCopiedDeviceKey(false), 2000);
+    } else {
+      setHasCopiedProjectKey(true);
+      setTimeout(() => setHasCopiedProjectKey(false), 2000);
     }
+    toast({ title: "Copied to clipboard!" });
   };
 
   if (isUserLoadingAuth || !user) {
@@ -143,41 +148,36 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>ESP32 Integration</CardTitle>
               <CardDescription>
-                Connect your ESP32 to collect and store real-time sensor data.
+                API keys required for your ESP32 to connect to your account.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                <div className="space-y-2">
-                <Label htmlFor="api-key">Your API Key</Label>
+                <Label htmlFor="device-api-key" className="flex items-center gap-2">
+                  <KeyRound /> Your Device API Key
+                </Label>
                  {isLoading ? (
                   <Skeleton className="h-10 w-full" />
-                ) : apiKey ? (
+                ) : deviceApiKey ? (
                    <div className="flex items-center space-x-2">
                     <Input
-                      id="api-key"
+                      id="device-api-key"
                       type="text"
-                      value={apiKey}
+                      value={deviceApiKey}
                       readOnly
                       className="font-mono"
                     />
-                    <Button variant="outline" size="icon" onClick={copyToClipboard}>
-                      {hasCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(deviceApiKey, 'device')}>
+                      {hasCopiedDeviceKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground pt-2">
-                    You don't have an API key yet. Generate one below.
+                    You don't have a Device API key yet. Generate one below.
                   </p>
                 )}
                  <p className="text-sm text-muted-foreground">
-                  Use this key in your ESP32's firmware to securely send data to your account.
-                </p>
-              </div>
-
-               <div className="flex items-center space-x-2">
-                <Wifi className="text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Your ESP32 should send POST requests to `/api/data` with the API key in the header.
+                  Use this key in your ESP32 firmware to identify your device.
                 </p>
               </div>
 
@@ -187,8 +187,37 @@ export default function SettingsPage() {
                 ) : (
                   <KeyRound className="mr-2" />
                 )}
-                {isGenerating ? 'Generating...' : (apiKey ? 'Generate New Key' : 'Generate API Key')}
+                {isGenerating ? 'Generating...' : (deviceApiKey ? 'Generate New Device Key' : 'Generate Device API Key')}
               </Button>
+
+              <div className="space-y-2 pt-4 border-t">
+                 <Label htmlFor="project-api-key" className="flex items-center gap-2">
+                  <Info /> Firebase Project API Key
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="project-api-key"
+                    type="text"
+                    value={firebaseConfig.apiKey}
+                    readOnly
+                    className="font-mono"
+                  />
+                   <Button variant="outline" size="icon" onClick={() => copyToClipboard(firebaseConfig.apiKey, 'project')}>
+                      {hasCopiedProjectKey ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                </div>
+                 <p className="text-sm text-muted-foreground">
+                  This public key identifies your Firebase project. It is required by your ESP32's firmware.
+                </p>
+              </div>
+
+               <div className="flex items-center space-x-2 pt-4 border-t">
+                <Wifi className="text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Your ESP32 should send POST requests to `/api/data` with the Device API key in the header.
+                </p>
+              </div>
+
             </CardContent>
           </Card>
         </main>
