@@ -7,9 +7,6 @@ import { get, getDatabase, ref, set, update } from 'firebase/database';
 import { initializeFirebase } from '@/firebase';
 import { randomUUID } from 'crypto';
 
-// The app no longer has individual users, so we use a constant ID.
-const GLOBAL_USER_ID = 'default_user';
-
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
   try {
     const result = await intelligentSwitchControl(input);
@@ -76,5 +73,20 @@ export async function updateSwitchState(switchId: number, name: string, state: b
   } catch (error: any) {
     console.error(`Error updating switch ${switchId}:`, error);
     return { success: false, error: error.message || `Failed to update switch ${switchId}.` };
+  }
+}
+
+export async function getSwitchStates() {
+  try {
+    const { database } = initializeFirebase();
+    const switchStatesRef = ref(database, 'app/switchStates');
+    const snapshot = await get(switchStatesRef);
+    if (snapshot.exists()) {
+      return { success: true, data: snapshot.val() };
+    }
+    return { success: true, data: null };
+  } catch (error: any) {
+    console.error('Error fetching switch states:', error);
+    return { success: false, error: error.message || 'Failed to fetch switch states.' };
   }
 }

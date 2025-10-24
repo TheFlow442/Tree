@@ -1,15 +1,19 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { initializeFirebase } from '@/firebase';
-import { ref, push, set } from 'firebase/database';
+import { ref, push, set, get } from 'firebase/database';
 
 export async function POST(request: NextRequest) {
   try {
     const apiKey = request.headers.get('Device-API-Key');
     const body = await request.json();
     
-    // Use the key from environment variables
-    const expectedApiKey = process.env.DEVICE_API_KEY;
+    const { database } = initializeFirebase();
+
+    // Fetch the expected API key from the database
+    const appRef = ref(database, `app/apiKey`);
+    const snapshot = await get(appRef);
+    const expectedApiKey = snapshot.exists() ? snapshot.val() : null;
 
     if (!apiKey || apiKey !== expectedApiKey) {
       return NextResponse.json({ success: false, error: 'Device API Key is invalid or missing.' }, { status: 401 });
@@ -19,9 +23,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const { database } = initializeFirebase();
-
-    // Data is no longer user-specific, so we store it in a global path.
     const energyDataRef = ref(database, `app/energyData`);
     const newEnergyDataRef = push(energyDataRef);
     
