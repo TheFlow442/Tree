@@ -6,21 +6,25 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from "next-themes"
 import { useUser } from '@/firebase';
+import { generateApiKey, getApiKey } from '@/app/actions';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LineChart, History, Settings, Wifi, Save, Loader2, Moon, Sun } from 'lucide-react';
+import { LineChart, History, Settings, Wifi, Save, Loader2, Moon, Sun, KeyRound, Copy, Check } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsPage() {
   const { user, isUserLoading: isUserLoadingAuth } = useUser();
   const router = useRouter();
   const { setTheme } = useTheme()
-  const [apiKey, setApiKey] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [hasCopied, setHasCopied] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,19 +32,54 @@ export default function SettingsPage() {
       router.push('/login');
     }
   }, [user, isUserLoadingAuth, router]);
-
-  const handleSave = () => {
-    setIsLoading(true);
-    // Simulate API call to save settings
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Settings Saved",
-        description: "Your ESP32 settings have been updated.",
+  
+  useEffect(() => {
+    if (user) {
+      setIsLoading(true);
+      getApiKey(user.uid).then(result => {
+        if(result.success) {
+          setApiKey(result.data.apiKey);
+        } else {
+           toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not fetch your API key.",
+          });
+        }
+        setIsLoading(false);
       });
-    }, 1500);
+    }
+  }, [user, toast]);
+
+  const handleGenerateKey = async () => {
+    if (!user) return;
+    setIsGenerating(true);
+    const result = await generateApiKey(user.uid);
+    if (result.success && result.data?.apiKey) {
+      setApiKey(result.data.apiKey);
+      toast({
+        title: "API Key Generated",
+        description: "Your new API key is ready to be used.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Generation Failed",
+        description: result.error,
+      });
+    }
+    setIsGenerating(false);
   };
   
+  const copyToClipboard = () => {
+    if (apiKey) {
+      navigator.clipboard.writeText(apiKey);
+      setHasCopied(true);
+      toast({ title: "Copied to clipboard!" });
+      setTimeout(() => setHasCopied(false), 2000);
+    }
+  };
+
   if (isUserLoadingAuth || !user) {
     return (
         <div className="flex items-center justify-center h-screen bg-background">
@@ -108,32 +147,47 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="api-key">API Key</Label>
-                <Input
-                  id="api-key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your device API key"
-                />
-                <p className="text-sm text-muted-foreground">
-                  This key will be used by your ESP32 to securely send data.
+               <div className="space-y-2">
+                <Label htmlFor="api-key">Your API Key</Label>
+                 {isLoading ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : apiKey ? (
+                   <div className="flex items-center space-x-2">
+                    <Input
+                      id="api-key"
+                      type="text"
+                      value={apiKey}
+                      readOnly
+                      className="font-mono"
+                    />
+                    <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                      {hasCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground pt-2">
+                    You don't have an API key yet. Generate one below.
+                  </p>
+                )}
+                 <p className="text-sm text-muted-foreground">
+                  Use this key in your ESP32's firmware to securely send data to your account.
                 </p>
               </div>
-              <div className="flex items-center space-x-2">
+
+               <div className="flex items-center space-x-2">
                 <Wifi className="text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   Your ESP32 should send POST requests to `/api/data` with the API key in the header.
                 </p>
               </div>
-              <Button onClick={handleSave} disabled={isLoading}>
-                {isLoading ? (
+
+              <Button onClick={handleGenerateKey} disabled={isGenerating}>
+                {isGenerating ? (
                   <Loader2 className="mr-2 animate-spin" />
                 ) : (
-                  <Save className="mr-2" />
+                  <KeyRound className="mr-2" />
                 )}
-                {isLoading ? 'Saving...' : 'Save Settings'}
+                {isGenerating ? 'Generating...' : (apiKey ? 'Generate New Key' : 'Generate API Key')}
               </Button>
             </CardContent>
           </Card>

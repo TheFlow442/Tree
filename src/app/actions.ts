@@ -3,6 +3,9 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
+import { get, getDatabase, ref, update } from 'firebase/database';
+import { initializeFirebase } from '@/firebase';
+import { randomUUID } from 'crypto';
 
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
   try {
@@ -26,4 +29,41 @@ export async function runEnergyPrediction() {
     console.error('Error in predictEnergyConsumption:', error);
     return { success: false, error: 'Failed to predict energy consumption.' };
   }
+}
+
+
+export async function generateApiKey(userId: string) {
+  if (!userId) {
+    return { success: false, error: 'User not authenticated.' };
+  }
+  try {
+    const { database } = initializeFirebase();
+    const apiKey = randomUUID();
+    const userRef = ref(database, `users/${userId}`);
+    
+    await update(userRef, { apiKey });
+    
+    return { success: true, data: { apiKey } };
+  } catch (error: any) {
+    console.error('Error generating API key:', error);
+    return { success: false, error: error.message || 'Failed to generate API key.' };
+  }
+}
+
+export async function getApiKey(userId: string) {
+    if (!userId) {
+      return { success: false, error: 'User not authenticated.' };
+    }
+    try {
+      const { database } = initializeFirebase();
+      const userRef = ref(database, `users/${userId}/apiKey`);
+      const snapshot = await get(userRef);
+      if (snapshot.exists()) {
+        return { success: true, data: { apiKey: snapshot.val() } };
+      }
+      return { success: true, data: { apiKey: null } };
+    } catch (error: any) {
+      console.error('Error fetching API key:', error);
+      return { success: false, error: error.message || 'Failed to fetch API key.' };
+    }
 }

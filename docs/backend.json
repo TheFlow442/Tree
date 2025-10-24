@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -19,6 +20,10 @@
           "type": "string",
           "description": "Date and time when the user registered.",
           "format": "date-time"
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "Unique API key for device authentication (e.g., ESP32)."
         }
       },
       "required": [
