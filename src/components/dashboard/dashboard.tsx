@@ -10,10 +10,8 @@ import { SwitchControl } from './switch-control';
 import { UsageHistory } from './usage-history';
 import { PredictionAnalytics } from './prediction-analytics';
 import type { PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
-import { useUser } from '@/firebase';
 
 export function Dashboard() {
-  const { user } = useUser();
   const [energyData, setEnergyData] = useState<EnergyData>(INITIAL_ENERGY_DATA);
   const [switches, setSwitches] = useState<SwitchState[]>(INITIAL_SWITCHES);
   const [userPreferences, setUserPreferences] = useState('Prioritize extending battery life and reducing cost. Only turn on essential appliances if battery is below 40%.');
@@ -65,7 +63,6 @@ export function Dashboard() {
   };
   
   const updateAllSwitches = useCallback(async (newSwitchStates: boolean[]) => {
-    if (!user) return;
     const updatedSwitches = switches.map((s, i) => ({
       ...s,
       state: newSwitchStates[i],
@@ -74,9 +71,9 @@ export function Dashboard() {
 
     // Update all switches in Firebase
     for (const s of updatedSwitches) {
-      await updateSwitchState(user.uid, s.id, s.name, s.state);
+      await updateSwitchState(s.id, s.name, s.state);
     }
-  }, [user, switches]);
+  }, [switches]);
 
 
   const handleOptimization = async () => {
@@ -118,17 +115,13 @@ export function Dashboard() {
   };
 
   const handleSwitchChange = async (id: number, checked: boolean) => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Not Authenticated' });
-      return;
-    }
     const targetSwitch = switches.find(s => s.id === id);
     if (!targetSwitch) return;
 
     setSwitches(prev => prev.map(s => s.id === id ? { ...s, state: checked } : s));
     setAiReasoning('');
 
-    const result = await updateSwitchState(user.uid, id, targetSwitch.name, checked);
+    const result = await updateSwitchState(id, targetSwitch.name, checked);
     if (!result.success) {
       toast({
         variant: 'destructive',

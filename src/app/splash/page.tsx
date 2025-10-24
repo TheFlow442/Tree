@@ -9,8 +9,8 @@ export default function SplashPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Immediately redirect to the login page, which will handle auth checks.
-    router.replace('/login');
+    // Immediately redirect to the home page.
+    router.replace('/home');
   }, [router]);
 
   return (

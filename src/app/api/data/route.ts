@@ -1,15 +1,18 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { initializeFirebase } from '@/firebase';
-import { get, ref, child, push, set } from 'firebase/database';
+import { ref, push, set } from 'firebase/database';
 
 export async function POST(request: NextRequest) {
   try {
     const apiKey = request.headers.get('Device-API-Key');
     const body = await request.json();
+    
+    // Use the key from environment variables
+    const expectedApiKey = process.env.DEVICE_API_KEY;
 
-    if (!apiKey) {
-      return NextResponse.json({ success: false, error: 'Device API Key is required.' }, { status: 401 });
+    if (!apiKey || apiKey !== expectedApiKey) {
+      return NextResponse.json({ success: false, error: 'Device API Key is invalid or missing.' }, { status: 401 });
     }
 
     if (!body || typeof body !== 'object') {
@@ -17,27 +20,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { database } = initializeFirebase();
-    const usersRef = ref(database, 'users');
-    const usersSnapshot = await get(usersRef);
 
-    if (!usersSnapshot.exists()) {
-        return NextResponse.json({ success: false, error: 'Authentication failed.' }, { status: 403 });
-    }
-
-    let userId: string | null = null;
-    usersSnapshot.forEach((userSnapshot) => {
-        const userData = userSnapshot.val();
-        if (userData.apiKey === apiKey) {
-            userId = userSnapshot.key;
-        }
-    });
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'Invalid Device API Key.' }, { status: 403 });
-    }
-
-    // The device is authenticated, now save its data
-    const energyDataRef = ref(database, `users/${userId}/energyData`);
+    // Data is no longer user-specific, so we store it in a global path.
+    const energyDataRef = ref(database, `app/energyData`);
     const newEnergyDataRef = push(energyDataRef);
     
     await set(newEnergyDataRef, {

@@ -7,6 +7,9 @@ import { get, getDatabase, ref, set, update } from 'firebase/database';
 import { initializeFirebase } from '@/firebase';
 import { randomUUID } from 'crypto';
 
+// The app no longer has individual users, so we use a constant ID.
+const GLOBAL_USER_ID = 'default_user';
+
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
   try {
     const result = await intelligentSwitchControl(input);
@@ -32,16 +35,13 @@ export async function runEnergyPrediction() {
 }
 
 
-export async function generateApiKey(userId: string) {
-  if (!userId) {
-    return { success: false, error: 'User not authenticated.' };
-  }
+export async function generateApiKey() {
   try {
     const { database } = initializeFirebase();
     const apiKey = randomUUID();
-    const userRef = ref(database, `users/${userId}`);
+    const appRef = ref(database, `app`);
     
-    await update(userRef, { apiKey });
+    await update(appRef, { apiKey });
     
     return { success: true, data: { apiKey } };
   } catch (error: any) {
@@ -50,14 +50,11 @@ export async function generateApiKey(userId: string) {
   }
 }
 
-export async function getApiKey(userId: string) {
-    if (!userId) {
-      return { success: false, error: 'User not authenticated.' };
-    }
+export async function getApiKey() {
     try {
       const { database } = initializeFirebase();
-      const userRef = ref(database, `users/${userId}/apiKey`);
-      const snapshot = await get(userRef);
+      const appRef = ref(database, `app/apiKey`);
+      const snapshot = await get(appRef);
       if (snapshot.exists()) {
         return { success: true, data: { apiKey: snapshot.val() } };
       }
@@ -68,13 +65,10 @@ export async function getApiKey(userId: string) {
     }
 }
 
-export async function updateSwitchState(userId: string, switchId: number, name: string, state: boolean) {
-  if (!userId) {
-    return { success: false, error: 'User not authenticated.' };
-  }
+export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
     const { database } = initializeFirebase();
-    const switchRef = ref(database, `users/${userId}/switchStates/switch${switchId}`);
+    const switchRef = ref(database, `app/switchStates/switch${switchId}`);
     
     await set(switchRef, { name, state, timestamp: new Date().toISOString() });
     

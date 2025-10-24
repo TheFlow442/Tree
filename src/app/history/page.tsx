@@ -1,10 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { LineChart, History, Settings, Upload, Download } from 'lucide-react';
@@ -17,16 +15,8 @@ import { downloadCSV } from '@/lib/csv';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 
 export default function HistoryPage() {
-  const { user, isUserLoading } = useUser();
-  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -57,14 +47,6 @@ export default function HistoryPage() {
       description: "Downloading historical_energy_data.csv.",
     });
   };
-
-  if (isUserLoading || !user) {
-    return (
-        <div className="flex items-center justify-center h-screen bg-background">
-            <div className="w-16 h-16 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
-        </div>
-    );
-  }
 
   return (
     <SidebarProvider>

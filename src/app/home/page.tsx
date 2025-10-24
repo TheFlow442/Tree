@@ -1,9 +1,6 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Dashboard } from '@/components/dashboard/dashboard';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
@@ -11,23 +8,6 @@ import { LineChart, History, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const { user, isUserLoading } = useUser();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-
-  if (isUserLoading || !user) {
-    return (
-        <div className="flex items-center justify-center h-screen bg-background">
-            <div className="w-16 h-16 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
-        </div>
-    );
-  }
-
   return (
     <SidebarProvider>
       <Sidebar>

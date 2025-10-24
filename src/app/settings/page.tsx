@@ -3,9 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTheme } from "next-themes"
-import { useUser } from '@/firebase';
 import { firebaseConfig } from '@/firebase/config';
 import { generateApiKey, getApiKey } from '@/app/actions';
 import { Header } from '@/components/header';
@@ -19,8 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsPage() {
-  const { user, isUserLoading: isUserLoadingAuth } = useUser();
-  const router = useRouter();
   const { setTheme } = useTheme()
   const [deviceApiKey, setDeviceApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,35 +24,26 @@ export default function SettingsPage() {
   const [hasCopiedDeviceKey, setHasCopiedDeviceKey] = useState(false);
   const [hasCopiedProjectKey, setHasCopiedProjectKey] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isUserLoadingAuth && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoadingAuth, router]);
   
   useEffect(() => {
-    if (user) {
-      setIsLoading(true);
-      getApiKey(user.uid).then(result => {
-        if(result.success) {
-          setDeviceApiKey(result.data.apiKey);
-        } else {
-           toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not fetch your Device API key.",
-          });
-        }
-        setIsLoading(false);
-      });
-    }
-  }, [user, toast]);
+    setIsLoading(true);
+    getApiKey().then(result => {
+      if(result.success) {
+        setDeviceApiKey(result.data.apiKey);
+      } else {
+          toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not fetch your Device API key.",
+        });
+      }
+      setIsLoading(false);
+    });
+  }, [toast]);
 
   const handleGenerateKey = async () => {
-    if (!user) return;
     setIsGenerating(true);
-    const result = await generateApiKey(user.uid);
+    const result = await generateApiKey();
     if (result.success && result.data?.apiKey) {
       setDeviceApiKey(result.data.apiKey);
       toast({
@@ -84,14 +71,6 @@ export default function SettingsPage() {
     }
     toast({ title: "Copied to clipboard!" });
   };
-
-  if (isUserLoadingAuth || !user) {
-    return (
-        <div className="flex items-center justify-center h-screen bg-background">
-            <div className="w-16 h-16 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
-        </div>
-    );
-  }
 
   return (
     <SidebarProvider>
@@ -177,7 +156,7 @@ export default function SettingsPage() {
                   </p>
                 )}
                  <p className="text-sm text-muted-foreground">
-                  Use this key in your ESP32 firmware to identify your device.
+                  Use this key in your ESP32 firmware to identify your device. It should be sent as the `Device-API-Key` header.
                 </p>
               </div>
 
