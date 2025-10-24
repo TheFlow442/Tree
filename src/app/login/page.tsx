@@ -6,11 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth, useUser } from '@/firebase';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useAuth, useUser, useDatabase } from '@/firebase';
+import { set, ref, serverTimestamp } from 'firebase/database';
 import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
-import { doc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -36,11 +34,9 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
-  const firestore = useFirestore();
+  const database = useDatabase();
 
   useEffect(() => {
-    // If the user is authenticated, redirect to the home page.
-    // This page is now the main entry point after the splash.
     if (!isUserLoading && user) {
       router.replace('/home');
     }
@@ -77,12 +73,12 @@ export default function LoginPage() {
       .then((userCredential) => {
         if (userCredential && userCredential.user) {
             const newUser = userCredential.user;
-            const userDocRef = doc(firestore, 'users', newUser.uid);
-            setDocumentNonBlocking(userDocRef, {
+            const userRef = ref(database, `users/${newUser.uid}`);
+            set(userRef, {
               id: newUser.uid,
               email: newUser.email,
               registrationDate: serverTimestamp(),
-            }, {});
+            });
         }
       })
       .catch((error: any) => {
@@ -97,7 +93,6 @@ export default function LoginPage() {
       });
   };
   
-  // Display a loading spinner while checking auth state or if the user is already logged in
   if (isUserLoading || user) {
       return (
           <div className="flex items-center justify-center h-screen bg-background">
@@ -106,7 +101,6 @@ export default function LoginPage() {
       );
   }
 
-  // Only render the login form if the user is not authenticated and auth check is complete.
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
        <div className="absolute top-8">
