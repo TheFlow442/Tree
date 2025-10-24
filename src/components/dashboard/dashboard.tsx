@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { runEnergyPrediction, runIntelligentSwitchControl } from '@/app/actions';
+import { runEnergyPrediction, runIntelligentSwitchControl, updateSwitchState } from '@/app/actions';
 import { INITIAL_ENERGY_DATA, INITIAL_SWITCHES } from '@/lib/data';
 import type { EnergyData, SwitchState } from '@/lib/types';
 import { EnergyMetrics } from './energy-metrics';
@@ -10,8 +10,10 @@ import { SwitchControl } from './switch-control';
 import { UsageHistory } from './usage-history';
 import { PredictionAnalytics } from './prediction-analytics';
 import type { PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
+import { useUser } from '@/firebase';
 
 export function Dashboard() {
+  const { user } = useUser();
   const [energyData, setEnergyData] = useState<EnergyData>(INITIAL_ENERGY_DATA);
   const [switches, setSwitches] = useState<SwitchState[]>(INITIAL_SWITCHES);
   const [userPreferences, setUserPreferences] = useState('Prioritize extending battery life and reducing cost. Only turn on essential appliances if battery is below 40%.');
@@ -61,6 +63,21 @@ export function Dashboard() {
     }
     setIsPredictionLoading(false);
   };
+  
+  const updateAllSwitches = useCallback(async (newSwitchStates: boolean[]) => {
+    if (!user) return;
+    const updatedSwitches = switches.map((s, i) => ({
+      ...s,
+      state: newSwitchStates[i],
+    }));
+    setSwitches(updatedSwitches);
+
+    // Update all switches in Firebase
+    for (const s of updatedSwitches) {
+      await updateSwitchState(user.uid, s.id, s.name, s.state);
+    }
+  }, [user, switches]);
+
 
   const handleOptimization = async () => {
     if (!prediction) {
@@ -82,9 +99,9 @@ export function Dashboard() {
     if (result.success && result.data) {
       const { switch1State, switch2State, switch3State, switch4State, switch5State, reasoning } = result.data;
       const newSwitchStates = [switch1State, switch2State, switch3State, switch4State, switch5State];
-      setSwitches(prevSwitches =>
-        prevSwitches.map((s, i) => ({ ...s, state: newSwitchStates[i] }))
-      );
+      
+      await updateAllSwitches(newSwitchStates);
+      
       setAiReasoning(reasoning);
       toast({
         title: "Optimization Complete",
@@ -100,9 +117,27 @@ export function Dashboard() {
     setIsOptimizing(false);
   };
 
-  const handleSwitchChange = (id: number, checked: boolean) => {
+  const handleSwitchChange = async (id: number, checked: boolean) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Not Authenticated' });
+      return;
+    }
+    const targetSwitch = switches.find(s => s.id === id);
+    if (!targetSwitch) return;
+
     setSwitches(prev => prev.map(s => s.id === id ? { ...s, state: checked } : s));
     setAiReasoning('');
+
+    const result = await updateSwitchState(user.uid, id, targetSwitch.name, checked);
+    if (!result.success) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: result.error,
+      });
+      // Revert UI on failure
+      setSwitches(prev => prev.map(s => s.id === id ? { ...s, state: !checked } : s));
+    }
   }
 
   return (

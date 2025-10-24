@@ -105,13 +105,9 @@
       "type": "object",
       "description": "Represents the state of a controllable switch.",
       "properties": {
-        "id": {
+        "name": {
           "type": "string",
-          "description": "Unique identifier for the SwitchState entry."
-        },
-        "switchNumber": {
-          "type": "number",
-          "description": "Identifier for the switch (1-5)."
+          "description": "Name of the switch (e.g. 'Living Room Lights')."
         },
         "state": {
           "type": "boolean",
@@ -124,8 +120,7 @@
         }
       },
       "required": [
-        "id",
-        "switchNumber",
+        "name",
         "state",
         "timestamp"
       ]
@@ -196,21 +191,21 @@
         }
       },
       {
-        "path": "/users/{userId}/switchStates/{switchStateId}",
+        "path": "/users/{userId}/switchStates/{switchId}",
         "definition": {
           "entityName": "SwitchState",
           "schema": {
             "$ref": "#/backend/entities/SwitchState"
           },
-          "description": "Stores the state of controllable switches. The userId parameter represents the unique Firebase Auth ID of the user, and the switchStateId is the unique ID for each switch state entry.",
+          "description": "Stores the state of controllable switches. The userId parameter represents the unique Firebase Auth ID of the user, and the switchId is the unique ID for each switch (e.g., 'switch1').",
           "params": [
             {
               "name": "userId",
               "description": "The unique Firebase Auth ID of the user."
             },
             {
-              "name": "switchStateId",
-              "description": "The unique ID for each switch state entry."
+              "name": "switchId",
+              "description": "The unique ID for each switch."
             }
           ]
         }
