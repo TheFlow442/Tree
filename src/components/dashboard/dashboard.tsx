@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { runEnergyPrediction, runIntelligentSwitchControl, updateSwitchState } from '@/app/actions';
+import { runEnergyPrediction, runIntelligentSwitchControl, updateSwitchState, getSwitchStates } from '@/app/actions';
 import { INITIAL_ENERGY_DATA, INITIAL_SWITCHES } from '@/lib/data';
 import type { EnergyData, SwitchState } from '@/lib/types';
 import { EnergyMetrics } from './energy-metrics';
@@ -10,6 +10,8 @@ import { SwitchControl } from './switch-control';
 import { UsageHistory } from './usage-history';
 import { PredictionAnalytics } from './prediction-analytics';
 import type { PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
+import { useDatabase, useMemoFirebase } from '@/firebase';
+import { onValue, ref } from 'firebase/database';
 
 export function Dashboard() {
   const [energyData, setEnergyData] = useState<EnergyData>(INITIAL_ENERGY_DATA);
@@ -20,10 +22,81 @@ export function Dashboard() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [aiReasoning, setAiReasoning] = useState('');
   const { toast } = useToast();
+  const database = useDatabase();
 
   useEffect(() => {
     handlePrediction(); // Initial prediction on load
+
+    const initialFetch = async () => {
+      const result = await getSwitchStates();
+      if (result.success && result.data) {
+        const dbSwitches = Object.entries(result.data).map(([id, s]: [string, any]) => ({
+          id: parseInt(id, 10),
+          name: s.name,
+          state: s.state,
+        }));
+        // sync with initial switches
+        const syncedSwitches = INITIAL_SWITCHES.map(is => {
+            const dbSwitch = dbSwitches.find(dbs => dbs.id === is.id);
+            return dbSwitch ? dbSwitch : is;
+        });
+
+        setSwitches(syncedSwitches);
+      }
+    };
+    initialFetch();
+
   }, []);
+
+  const energyDataRef = useMemoFirebase(() => database ? ref(database, 'app/energyData') : null, [database]);
+  const switchStatesRef = useMemoFirebase(() => database ? ref(database, 'app/switchStates') : null, [database]);
+
+  useEffect(() => {
+    if (!energyDataRef) return;
+    const unsubscribe = onValue(energyDataRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Get the latest entry
+        const latestKey = Object.keys(data).sort().pop();
+        if (latestKey) {
+            const latestData = data[latestKey];
+             setEnergyData(prev => ({
+                ...prev, // keep fields not sent by device
+                voltage: latestData.voltage ?? prev.voltage,
+                current: latestData.current ?? prev.current,
+                batteryLevel: latestData.batteryLevel ?? prev.batteryLevel,
+                power: (latestData.voltage && latestData.current) ? latestData.voltage * latestData.current : prev.power,
+                temperature: latestData.temperature ?? prev.temperature,
+                humidity: latestData.humidity ?? prev.humidity,
+             }));
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [energyDataRef]);
+
+   useEffect(() => {
+    if (!switchStatesRef) return;
+    const unsubscribe = onValue(switchStatesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setSwitches(prevSwitches => {
+          const updatedSwitches = [...prevSwitches];
+          let hasChanged = false;
+          Object.entries(data).forEach(([id, s]: [string, any]) => {
+            const switchId = parseInt(id, 10);
+            const switchIndex = updatedSwitches.findIndex(sw => sw.id === switchId);
+            if (switchIndex !== -1 && updatedSwitches[switchIndex].state !== s.state) {
+              updatedSwitches[switchIndex] = { ...updatedSwitches[switchIndex], name: s.name, state: s.state };
+              hasChanged = true;
+            }
+          });
+          return hasChanged ? updatedSwitches : prevSwitches;
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, [switchStatesRef]);
 
   const handlePrediction = async () => {
     setIsPredictionLoading(true);
@@ -51,11 +124,13 @@ export function Dashboard() {
       state: newSwitchStates[i],
     }));
 
+    // Optimistically update UI
     setSwitches(updatedSwitches);
 
-    // In a real app, you'd loop and call the server action.
+    // Call server action for each switch
     for (const s of updatedSwitches) {
-      await updateSwitchState(s.id, s.name, s.state);
+      // no need to await, fire and forget
+      updateSwitchState(s.id, s.name, s.state);
     }
   }, [switches]);
 
@@ -72,6 +147,7 @@ export function Dashboard() {
     setIsOptimizing(true);
     const result = await runIntelligentSwitchControl({
       ...energyData,
+      powerConsumption: energyData.power,
       predictedUsage: prediction.predictedConsumption,
       userPreferences,
       userUsagePatterns: prediction.userUsagePatterns,
@@ -102,6 +178,7 @@ export function Dashboard() {
     const targetSwitch = switches.find(s => s.id === id);
     if (!targetSwitch) return;
 
+    // Optimistic UI update
     setSwitches(prev => prev.map(s => s.id === id ? { ...s, state: checked } : s));
     setAiReasoning('');
 
@@ -112,6 +189,7 @@ export function Dashboard() {
         title: 'Update Failed',
         description: result.error,
       });
+      // Revert UI on failure
       setSwitches(prev => prev.map(s => s.id === id ? { ...s, state: !checked } : s));
     }
   }

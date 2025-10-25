@@ -15,6 +15,7 @@ const IntelligentSwitchControlInputSchema = z.object({
   voltage: z.number().describe('The current voltage of the solar system.'),
   current: z.number().describe('The current current of the solar system.'),
   batteryLevel: z.number().describe('The current battery level of the solar system (0-100).'),
+  powerConsumption: z.number().describe("The current power consumption in Watts."),
   predictedUsage: z.number().describe('The predicted energy consumption for the next period from the Firebase ML model.'),
   userPreferences: z.string().describe('The user preferences for energy usage and switch control.'),
   userUsagePatterns: z.string().describe('Analysis of historical user usage patterns from the Firebase ML model.')
@@ -41,7 +42,7 @@ const prompt = ai.definePrompt({
   output: {schema: IntelligentSwitchControlOutputSchema},
   prompt: `You are an AI assistant designed to intelligently manage five switches in a smart solar system, using insights from a deployed Firebase ML model.
 
-  Based on the current voltage ({{{voltage}}}V), current ({{{current}}}A), battery level ({{{batteryLevel}}}%), ML-predicted energy consumption ({{{predictedUsage}}} units), user preferences ("{{{userPreferences}}}"), and ML-derived user usage patterns ("{{{userUsagePatterns}}}"), determine the optimal state for each of the five switches.
+  Based on the current voltage ({{{voltage}}}V), current ({{{current}}}A), battery level ({{{batteryLevel}}}%), current power consumption ({{{powerConsumption}}}W), ML-predicted energy consumption ({{{predictedUsage}}} units), user preferences ("{{{userPreferences}}}"), and ML-derived user usage patterns ("{{{userUsagePatterns}}}"), determine the optimal state for each of the five switches.
 
   Provide a clear reasoning for your recommendations. The reasoning must incorporate the user usage patterns and prioritize energy optimization and battery health while respecting user preferences.
 
