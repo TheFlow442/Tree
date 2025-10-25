@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { runEnergyPrediction, runIntelligentSwitchControl, updateSwitchState, getSwitchStates } from '@/app/actions';
+import { runEnergyPrediction, runIntelligentSwitchControl, updateSwitchState } from '@/app/actions';
 import { INITIAL_ENERGY_DATA, INITIAL_SWITCHES } from '@/lib/data';
 import type { EnergyData, SwitchState } from '@/lib/types';
 import { EnergyMetrics } from './energy-metrics';
@@ -10,8 +10,6 @@ import { SwitchControl } from './switch-control';
 import { UsageHistory } from './usage-history';
 import { PredictionAnalytics } from './prediction-analytics';
 import type { PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
-import { ref, onValue } from 'firebase/database';
-import { useDatabase } from '@/firebase';
 
 export function Dashboard() {
   const [energyData, setEnergyData] = useState<EnergyData>(INITIAL_ENERGY_DATA);
@@ -22,60 +20,10 @@ export function Dashboard() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [aiReasoning, setAiReasoning] = useState('');
   const { toast } = useToast();
-  const database = useDatabase();
 
   useEffect(() => {
-    // Fetch initial switch states
-    getSwitchStates().then(result => {
-      if (result.success && result.data) {
-        const firebaseSwitches = result.data;
-        const updatedSwitches = INITIAL_SWITCHES.map(s => ({
-          ...s,
-          state: firebaseSwitches[`switch${s.id}`]?.state ?? s.state,
-        }));
-        setSwitches(updatedSwitches);
-      }
-    });
-
-    // Listen for real-time switch state changes
-    const switchStatesRef = ref(database, 'app/switchStates');
-    const unsubscribeSwitches = onValue(switchStatesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setSwitches(prevSwitches => prevSwitches.map(s => ({
-          ...s,
-          state: data[`switch${s.id}`]?.state ?? s.state
-        })));
-      }
-    });
-
-    // Listen for real-time energy data changes
-    const energyDataRef = ref(database, 'app/energyData');
-     const unsubscribeEnergy = onValue(energyDataRef, (snapshot) => {
-       const data = snapshot.val();
-       if (data) {
-        const lastDataPoint = Object.values(data).pop() as any;
-        if (lastDataPoint) {
-            setEnergyData(prev => ({
-                ...prev, // keep some existing state if not provided
-                voltage: lastDataPoint.voltage ?? prev.voltage,
-                current: lastDataPoint.current ?? prev.current,
-                batteryLevel: lastDataPoint.batteryLevel ?? prev.batteryLevel,
-                power: lastDataPoint.power ?? (lastDataPoint.voltage * lastDataPoint.current) ?? prev.power,
-                temperature: lastDataPoint.temperature ?? prev.temperature,
-                humidity: lastDataPoint.humidity ?? prev.humidity,
-             }));
-        }
-       }
-     });
-
     handlePrediction(); // Initial prediction on load
-    
-    return () => {
-      unsubscribeSwitches();
-      unsubscribeEnergy();
-    };
-  }, [database]);
+  }, []);
 
   const handlePrediction = async () => {
     setIsPredictionLoading(true);
@@ -103,13 +51,11 @@ export function Dashboard() {
       state: newSwitchStates[i],
     }));
 
-    // Optimistically update UI
     setSwitches(updatedSwitches);
 
-    // Update all switches in Firebase
+    // In a real app, you'd loop and call the server action.
     for (const s of updatedSwitches) {
-      // We don't need to await here as the listener will catch the update
-      updateSwitchState(s.id, s.name, s.state);
+      await updateSwitchState(s.id, s.name, s.state);
     }
   }, [switches]);
 
@@ -156,7 +102,6 @@ export function Dashboard() {
     const targetSwitch = switches.find(s => s.id === id);
     if (!targetSwitch) return;
 
-    // Optimistically update UI
     setSwitches(prev => prev.map(s => s.id === id ? { ...s, state: checked } : s));
     setAiReasoning('');
 
@@ -167,7 +112,6 @@ export function Dashboard() {
         title: 'Update Failed',
         description: result.error,
       });
-      // Revert UI on failure (the listener will do this, but this is faster)
       setSwitches(prev => prev.map(s => s.id === id ? { ...s, state: !checked } : s));
     }
   }

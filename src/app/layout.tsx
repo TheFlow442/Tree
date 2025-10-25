@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase';
 import { ThemeProvider } from '@/components/theme-provider';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'Solaris智控',

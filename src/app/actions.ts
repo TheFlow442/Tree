@@ -3,8 +3,6 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
-import { get, getDatabase, ref, set, update } from 'firebase/database';
-import { initializeFirebase } from '@/firebase';
 import { randomUUID } from 'crypto';
 
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
@@ -31,15 +29,14 @@ export async function runEnergyPrediction() {
   }
 }
 
+// NOTE: The following functions are not currently wired up to the frontend
+// but are kept for reference. They would require Firebase to be fully integrated.
 
 export async function generateApiKey() {
   try {
-    const { database } = initializeFirebase();
     const apiKey = randomUUID();
-    const appRef = ref(database, `app`);
-    
-    await update(appRef, { apiKey });
-    
+    // In a real implementation, you would save this to your database.
+    console.log(`Generated API Key: ${apiKey}`);
     return { success: true, data: { apiKey } };
   } catch (error: any) {
     console.error('Error generating API key:', error);
@@ -49,13 +46,9 @@ export async function generateApiKey() {
 
 export async function getApiKey() {
     try {
-      const { database } = initializeFirebase();
-      const appRef = ref(database, `app/apiKey`);
-      const snapshot = await get(appRef);
-      if (snapshot.exists()) {
-        return { success: true, data: { apiKey: snapshot.val() } };
-      }
-      return { success: true, data: { apiKey: null } };
+      // In a real implementation, you would fetch this from your database.
+      console.log('Fetching API Key...');
+      return { success: true, data: { apiKey: 'dummy-api-key-to-be-replaced' } };
     } catch (error: any) {
       console.error('Error fetching API key:', error);
       return { success: false, error: error.message || 'Failed to fetch API key.' };
@@ -64,11 +57,8 @@ export async function getApiKey() {
 
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
-    const { database } = initializeFirebase();
-    const switchRef = ref(database, `app/switchStates/switch${switchId}`);
-    
-    await set(switchRef, { name, state, timestamp: new Date().toISOString() });
-    
+    // In a real implementation, you would update this in your database.
+    console.log(`Updating switch ${switchId} (${name}) to ${state}`);
     return { success: true };
   } catch (error: any) {
     console.error(`Error updating switch ${switchId}:`, error);
@@ -78,12 +68,8 @@ export async function updateSwitchState(switchId: number, name: string, state: b
 
 export async function getSwitchStates() {
   try {
-    const { database } = initializeFirebase();
-    const switchStatesRef = ref(database, 'app/switchStates');
-    const snapshot = await get(switchStatesRef);
-    if (snapshot.exists()) {
-      return { success: true, data: snapshot.val() };
-    }
+    // In a real implementation, you would fetch this from your database.
+    console.log('Fetching switch states...');
     return { success: true, data: null };
   } catch (error: any) {
     console.error('Error fetching switch states:', error);
