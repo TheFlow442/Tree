@@ -205,6 +205,7 @@ void sendSensorData() {
 
   HTTPClient http;
   // ===== 2. FILL IN YOUR APP URL =====
+  // This is the URL of your deployed web application.
   String serverUrl = "https://<YOUR_APP_URL>/api/data"; // IMPORTANT: Replace <YOUR_APP_URL> with your deployed App URL
   
   http.begin(serverUrl);
