@@ -1,33 +1,40 @@
 
-import { initializeApp, getApps, cert, getApp } from 'firebase-admin/app';
-import { getDatabase } from 'firebase-admin/database';
+import admin from 'firebase-admin';
 
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+// This is the correct way to get the service account in this environment.
+// The FIREBASE_CONFIG environment variable is automatically populated.
+const serviceAccount = process.env.FIREBASE_CONFIG
+  ? JSON.parse(process.env.FIREBASE_CONFIG)
   : undefined;
 
 function getFirebaseAdmin() {
-  if (getApps().length) {
+  if (admin.apps.length > 0) {
     return {
-      app: getApp(),
-      database: getDatabase(),
+      app: admin.app(),
+      database: admin.database(),
     };
   }
-
+  
   if (!serviceAccount) {
-    throw new Error(
-      'FIREBASE_SERVICE_ACCOUNT environment variable is not set. Cannot initialize Firebase Admin SDK.'
-    );
+    throw new Error('FIREBASE_CONFIG environment variable not found. Cannot initialize Firebase Admin SDK.');
   }
 
-  const app = initializeApp({
-    credential: cert(serviceAccount),
-    databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  // Use the project ID from the automatically populated environment variables
+  const projectId = serviceAccount.projectId;
+  if (!projectId) {
+     throw new Error('Project ID not found in FIREBASE_CONFIG.');
+  }
+  
+  const databaseURL = `https://${projectId}-default-rtdb.firebaseio.com`;
+
+  const app = admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    databaseURL: databaseURL,
   });
 
   return {
     app,
-    database: getDatabase(app),
+    database: admin.database(app),
   };
 }
 

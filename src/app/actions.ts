@@ -4,25 +4,8 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, get } from 'firebase/database';
-import { firebaseConfig } from '@/firebase/config';
+import { getFirebaseAdmin } from '@/firebase/server';
 import { randomUUID } from 'crypto';
-
-// Helper function to initialize Firebase on the server
-function getFirebaseServer() {
-  if (getApps().some(app => app.name === 'server-app')) {
-    const serverApp = getApp('server-app');
-    return {
-      database: getDatabase(serverApp),
-    };
-  }
-
-  const serverApp = initializeApp(firebaseConfig, 'server-app');
-  return {
-    database: getDatabase(serverApp),
-  };
-}
 
 
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
@@ -52,9 +35,9 @@ export async function runEnergyPrediction() {
 export async function generateApiKey() {
   try {
     const apiKey = randomUUID();
-    const { database } = getFirebaseServer();
-    const appRef = ref(database, 'app/apiKey');
-    await set(appRef, apiKey);
+    const { database } = getFirebaseAdmin();
+    const appRef = database.ref('app/apiKey');
+    await appRef.set(apiKey);
     return { success: true, data: { apiKey } };
   } catch (error: any) {
     console.error('Error generating API key:', error);
@@ -64,9 +47,9 @@ export async function generateApiKey() {
 
 export async function getApiKey() {
   try {
-    const { database } = getFirebaseServer();
-    const appRef = ref(database, 'app/apiKey');
-    const snapshot = await get(appRef);
+    const { database } = getFirebaseAdmin();
+    const appRef = database.ref('app/apiKey');
+    const snapshot = await appRef.once('value');
     const apiKey = snapshot.exists() ? snapshot.val() : null;
     return { success: true, data: { apiKey } };
   } catch (error: any) {
@@ -77,9 +60,9 @@ export async function getApiKey() {
 
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
-    const { database } = getFirebaseServer();
-    const switchRef = ref(database, `app/switchStates/${switchId}`);
-    await set(switchRef, { name, state });
+    const { database } = getFirebaseAdmin();
+    const switchRef = database.ref(`app/switchStates/${switchId}`);
+    await switchRef.set({ name, state });
     return { success: true };
   } catch (error: any) {
     console.error(`Error updating switch ${switchId}:`, error);
@@ -89,9 +72,9 @@ export async function updateSwitchState(switchId: number, name: string, state: b
 
 export async function getSwitchStates() {
   try {
-    const { database } = getFirebaseServer();
-    const switchesRef = ref(database, 'app/switchStates');
-    const snapshot = await get(switchesRef);
+    const { database } = getFirebaseAdmin();
+    const switchesRef = database.ref('app/switchStates');
+    const snapshot = await switchesRef.once('value');
     const switchStates = snapshot.exists() ? snapshot.val() : null;
     return { success: true, data: switchStates };
   } catch (error: any) {
