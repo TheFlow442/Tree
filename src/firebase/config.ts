@@ -1,7 +1,7 @@
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 export const firebaseConfig = {
-  apiKey: "AIzaSyBus4glxkSIDXh94Bp5W4SysUvWCpBMVYo",
+  apiKey: "AIzaSyBUsB3M6UuHkAiv9FQO9z3uB-JQmfKOPlg",
   authDomain: "smart-solar-agent.firebaseapp.com",
   databaseURL: "https://smart-solar-agent-default-rtdb.firebaseio.com",
   projectId: "smart-solar-agent",
