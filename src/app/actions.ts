@@ -109,11 +109,11 @@ export async function updateSwitchState(switchId: number, name: string, state: b
     const url = `${databaseUrl}/${path}`;
 
     const response = await fetch(url, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, state }),
+      body: JSON.stringify({ state }),
     });
 
     if (!response.ok) {
