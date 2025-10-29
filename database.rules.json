@@ -1,3 +1,4 @@
+
 {
   "rules": {
     "app": {
@@ -6,12 +7,12 @@
         ".read": "auth != null",
         ".write": false
       },
-      // Authenticated users can control the switches.
+      // Authenticated users (including anonymous) can control the switches.
       "switchStates": {
         ".read": "auth != null",
         ".write": "auth != null"
       },
-      // Energy data can be read by authenticated users, but only written by the server.
+      // Energy data can be read by authenticated users, but only written by the server (via secret).
       "energyData": {
         ".read": "auth != null",
         ".write": false
