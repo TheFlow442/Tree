@@ -105,15 +105,17 @@ export async function updateSwitchState(switchId: number, name: string, state: b
       throw new Error('Server configuration error: Missing database secret.');
     }
 
+    // Correctly target the specific switch object for a PATCH update
     const path = `app/switchStates/${switchId}.json?auth=${secret}`;
     const url = `${databaseUrl}/${path}`;
 
     const response = await fetch(url, {
-      method: 'PATCH',
+      method: 'PATCH', // Use PATCH to update only specific fields
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ state }),
+      // Send an object to update the 'state' field
+      body: JSON.stringify({ state: state }),
     });
 
     if (!response.ok) {
