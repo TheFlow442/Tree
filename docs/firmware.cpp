@@ -29,6 +29,8 @@
 #include <LiquidCrystal.h>
 #include <DHT.h>
 #include "Firebase_ESP_Client.h" // Modern, recommended Firebase library
+#include <HTTPClient.h>
+
 
 // ===== 1. FILL IN YOUR CREDENTIALS =====
 #define WIFI_SSID "YOUR_WIFI_SSID"
@@ -193,9 +195,9 @@ void sendSensorData() {
     return;
   }
 
-  // Use the built-in HTTP Client from the Firebase library
   HTTPClient http;
-  String serverUrl = "https://<YOUR_APP_URL>/api/data"; // IMPORTANT: Replace with your deployed App URL
+  // ===== 2. FILL IN YOUR APP URL =====
+  String serverUrl = "https://<YOUR_APP_URL>/api/data"; // IMPORTANT: Replace <YOUR_APP_URL> with your deployed App URL
   
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
