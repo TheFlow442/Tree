@@ -1,20 +1,17 @@
 {
   "rules": {
     "app": {
-      // The API key can be read by anyone (including the server-side action)
+      // The API key can be read by any authenticated user.
       "apiKey": {
-        ".read": true,
-        // Write access is disallowed for all but privileged server processes
-        // that authenticate via other means (like database secrets).
+        ".read": "auth != null",
         ".write": false
       },
-      // Authenticated users of the web app can control the switches
+      // Authenticated users can control the switches.
       "switchStates": {
         ".read": "auth != null",
         ".write": "auth != null"
       },
-      // Energy data can only be written by a privileged server process (your API route)
-      // and read by authenticated users.
+      // Energy data can be read by authenticated users, but only written by the server.
       "energyData": {
         ".read": "auth != null",
         ".write": false

@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getDatabase, ref, get, child, push, set } from 'firebase/database';
+import { getDatabase, ref, get, child } from 'firebase/database';
 import { firebaseConfig } from '@/firebase/config';
 
 // Server-side specific initialization for API routes
@@ -20,9 +20,6 @@ export async function POST(request: NextRequest) {
     const apiKey = request.headers.get('Device-API-Key');
     const body = await request.json();
 
-    // The API key is written by a server action with admin-like privileges.
-    // The API route reads it using standard client SDK access.
-    // The security rules must allow this read.
     const dbRef = ref(database);
     const snapshot = await get(child(dbRef, 'app/apiKey'));
     const expectedApiKey = snapshot.exists() ? snapshot.val() : null;
@@ -46,7 +43,7 @@ export async function POST(request: NextRequest) {
     const url = `${databaseUrl}/${path}`;
 
     const response = await fetch(url, {
-      method: 'POST', // POST to push a new entry
+      method: 'POST', // POST to push a new entry with a unique ID
       headers: {
         'Content-Type': 'application/json',
       },

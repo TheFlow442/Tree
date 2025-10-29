@@ -47,8 +47,6 @@ export async function runEnergyPrediction() {
 
 export async function generateApiKey() {
   try {
-    // This action must authenticate with privileges to write to the database.
-    // We will use the REST API with the database secret for this.
     const databaseUrl = firebaseConfig.databaseURL;
     if (!databaseUrl) {
       throw new Error('databaseURL is not defined in firebaseConfig');
@@ -91,8 +89,6 @@ export async function getApiKey() {
     return { success: true, data: { apiKey } };
   } catch (error: any) {
     console.error('Error fetching API key:', error);
-    // This is a read operation, so permission denied might mean rules are too strict.
-    // Or it could be a network issue.
     return { success: false, error: 'Could not fetch API key. Check database rules and connectivity.' };
   }
 }
@@ -100,7 +96,6 @@ export async function getApiKey() {
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
     const switchRef = ref(database, `app/switchStates/${switchId}`);
-    // Use the client SDK which authenticates as the end-user
     await set(switchRef, { name, state });
     return { success: true };
   } catch (error: any) {
