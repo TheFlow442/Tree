@@ -35,9 +35,17 @@
 // ===== 1. FILL IN YOUR CREDENTIALS =====
 #define WIFI_SSID "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-#define API_KEY "YOUR_FIREBASE_PROJECT_API_KEY" // From your web app's Settings page
-#define DATABASE_URL "YOUR_DATABASE_URL"       // E.g., "https://<project-id>-default-rtdb.firebaseio.com"
-#define DEVICE_API_KEY "YOUR_DEVICE_API_KEY"   // From your web app's Settings page
+
+// Found on your web app's Settings page, labeled "Firebase Project API Key".
+// This key identifies your Firebase project.
+#define API_KEY "YOUR_FIREBASE_PROJECT_API_KEY" 
+
+// Found in your Firebase Console -> Realtime Database. It looks like "https://<project-id>-default-rtdb.firebaseio.com".
+#define DATABASE_URL "YOUR_DATABASE_URL"       
+
+// Generated on your web app's Settings page, labeled "Your Device API Key".
+// This key authenticates your ESP32 when it sends data to your web app's API.
+#define DEVICE_API_KEY "YOUR_DEVICE_API_KEY"   
 
 // ===== Pins =====
 #define Relay1 13
