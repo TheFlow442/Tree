@@ -4,7 +4,7 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
-import { getDatabase, ref, set, get, child } from 'firebase/database';
+import { getDatabase, ref, get, child } from 'firebase/database';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
 import { randomUUID } from 'crypto';
@@ -95,8 +95,32 @@ export async function getApiKey() {
 
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
-    const switchRef = ref(database, `app/switchStates/${switchId}`);
-    await set(switchRef, { name, state });
+    const databaseUrl = firebaseConfig.databaseURL;
+    if (!databaseUrl) {
+      throw new Error('databaseURL is not defined in firebaseConfig');
+    }
+    const secret = process.env.FIREBASE_DATABASE_SECRET;
+    if (!secret) {
+      console.error('FIREBASE_DATABASE_SECRET is not set in environment variables.');
+      throw new Error('Server configuration error: Missing database secret.');
+    }
+
+    const path = `app/switchStates/${switchId}.json?auth=${secret}`;
+    const url = `${databaseUrl}/${path}`;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, state }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Failed to update switch ${switchId}.`);
+    }
+
     return { success: true };
   } catch (error: any) {
     console.error(`Error updating switch ${switchId}:`, error);
