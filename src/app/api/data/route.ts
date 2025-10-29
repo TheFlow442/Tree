@@ -1,17 +1,28 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { initializeFirebase } from '@/firebase';
-import { ref, get, child, push, set } from 'firebase/database';
+import { initializeApp, getApp, getApps } from 'firebase/app';
+import { getDatabase, ref, get, child, push, set } from 'firebase/database';
+import { firebaseConfig } from '@/firebase/config';
 
-// Initialize on the server for the API route
-const { database } = initializeFirebase();
+// Server-side specific initialization for API routes
+function initializeFirebaseOnServer() {
+  if (getApps().some(app => app.name === 'api-route')) {
+    return getApp('api-route');
+  }
+  return initializeApp(firebaseConfig, 'api-route');
+}
+
+const serverApp = initializeFirebaseOnServer();
+const database = getDatabase(serverApp);
 
 export async function POST(request: NextRequest) {
   try {
     const apiKey = request.headers.get('Device-API-Key');
     const body = await request.json();
-    
-    // Fetch the expected API key from the database
+
+    // The API key is written by a server action with admin-like privileges.
+    // The API route reads it using standard client SDK access.
+    // The security rules must allow this read.
     const dbRef = ref(database);
     const snapshot = await get(child(dbRef, 'app/apiKey'));
     const expectedApiKey = snapshot.exists() ? snapshot.val() : null;
@@ -24,13 +35,31 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const energyDataRef = ref(database, 'app/energyData');
-    const newEnergyDataRef = push(energyDataRef);
-    
-    await set(newEnergyDataRef, {
+    const secret = process.env.FIREBASE_DATABASE_SECRET;
+    if (!secret) {
+      console.error('FIREBASE_DATABASE_SECRET is not set in environment variables.');
+      return NextResponse.json({ success: false, error: 'Server configuration error.' }, { status: 500 });
+    }
+
+    const databaseUrl = firebaseConfig.databaseURL;
+    const path = `app/energyData.json?auth=${secret}`;
+    const url = `${databaseUrl}/${path}`;
+
+    const response = await fetch(url, {
+      method: 'POST', // POST to push a new entry
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         ...body,
         timestamp: new Date().toISOString(),
+      }),
     });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to write energy data to database.');
+    }
 
     return NextResponse.json({ success: true, message: 'Data received successfully.' });
 

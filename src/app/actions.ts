@@ -4,13 +4,22 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
-import { getDatabase, ref, set, child, get } from 'firebase/database';
-import { initializeFirebase } from '@/firebase';
+import { getDatabase, ref, set, get, child } from 'firebase/database';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { firebaseConfig } from '@/firebase/config';
 import { randomUUID } from 'crypto';
 
-// Server-side actions now use the client SDK, but initialized separately
-// to avoid conflicts with client-side instances.
-const { database } = initializeFirebase();
+// Server-side specific initialization
+function initializeFirebaseOnServer() {
+  if (getApps().some(app => app.name === 'server-actions')) {
+    return getApp('server-actions');
+  }
+  return initializeApp(firebaseConfig, 'server-actions');
+}
+
+const serverApp = initializeFirebaseOnServer();
+const database = getDatabase(serverApp);
+
 
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
   try {
@@ -38,9 +47,35 @@ export async function runEnergyPrediction() {
 
 export async function generateApiKey() {
   try {
+    // This action must authenticate with privileges to write to the database.
+    // We will use the REST API with the database secret for this.
+    const databaseUrl = firebaseConfig.databaseURL;
+    if (!databaseUrl) {
+      throw new Error('databaseURL is not defined in firebaseConfig');
+    }
+    const secret = process.env.FIREBASE_DATABASE_SECRET;
+     if (!secret) {
+      console.error('FIREBASE_DATABASE_SECRET is not set in environment variables.');
+      throw new Error('Server configuration error: Missing database secret.');
+    }
+
     const apiKey = randomUUID();
-    const appRef = ref(database, 'app/apiKey');
-    await set(appRef, apiKey);
+    const path = `app/apiKey.json?auth=${secret}`;
+    const url = `${databaseUrl}/${path}`;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(apiKey),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to write API key to database.');
+    }
+
     return { success: true, data: { apiKey } };
   } catch (error: any) {
     console.error('Error generating API key:', error);
@@ -49,20 +84,23 @@ export async function generateApiKey() {
 }
 
 export async function getApiKey() {
-  try {
+   try {
     const dbRef = ref(database);
     const snapshot = await get(child(dbRef, 'app/apiKey'));
     const apiKey = snapshot.exists() ? snapshot.val() : null;
     return { success: true, data: { apiKey } };
   } catch (error: any) {
     console.error('Error fetching API key:', error);
-    return { success: false, error: error.message || 'Failed to fetch API key.' };
+    // This is a read operation, so permission denied might mean rules are too strict.
+    // Or it could be a network issue.
+    return { success: false, error: 'Could not fetch API key. Check database rules and connectivity.' };
   }
 }
 
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
     const switchRef = ref(database, `app/switchStates/${switchId}`);
+    // Use the client SDK which authenticates as the end-user
     await set(switchRef, { name, state });
     return { success: true };
   } catch (error: any) {
@@ -70,6 +108,7 @@ export async function updateSwitchState(switchId: number, name: string, state: b
     return { success: false, error: error.message || `Failed to update switch ${switchId}.` };
   }
 }
+
 
 export async function getSwitchStates() {
   try {

@@ -1,28 +1,23 @@
 
 {
   "rules": {
-    ".read": false,
-    ".write": false,
     "app": {
+      // The API key can be read by anyone (including our API route)
+      // but only written by the server (via database secret)
       "apiKey": {
-        // Only server-side authenticated requests can read/write the API key.
-        // This is implicitly handled by using the Admin SDK or database secrets in server code.
-        ".read": "auth != null",
-        ".write": "auth != null"
+        ".read": true,
+        ".write": false
       },
+      // Authenticated users of the web app can control the switches
       "switchStates": {
-        // Any authenticated user (including anonymous users from the web app) can read/write switch states.
         ".read": "auth != null",
         ".write": "auth != null"
       },
+      // Energy data can be read by authenticated web app users
+      // but only written by the server (via database secret)
       "energyData": {
-        // The API route (server) will write this data. It authenticates with a secret.
-        // The client (authenticated user) can read it.
         ".read": "auth != null",
-        ".write": false, // Only the server should write here. We will allow this via REST.
-        "$pushId": {
-          ".write": true // Allow the server to push new data.
-        }
+        ".write": false
       }
     }
   }
