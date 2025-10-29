@@ -4,9 +4,13 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
-import { getFirebaseAdmin } from '@/firebase/server';
+import { getDatabase, ref, set, child, get } from 'firebase/database';
+import { initializeFirebase } from '@/firebase';
 import { randomUUID } from 'crypto';
 
+// Server-side actions now use the client SDK, but initialized separately
+// to avoid conflicts with client-side instances.
+const { database } = initializeFirebase();
 
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
   try {
@@ -35,9 +39,8 @@ export async function runEnergyPrediction() {
 export async function generateApiKey() {
   try {
     const apiKey = randomUUID();
-    const { database } = getFirebaseAdmin();
-    const appRef = database.ref('app/apiKey');
-    await appRef.set(apiKey);
+    const appRef = ref(database, 'app/apiKey');
+    await set(appRef, apiKey);
     return { success: true, data: { apiKey } };
   } catch (error: any) {
     console.error('Error generating API key:', error);
@@ -47,9 +50,8 @@ export async function generateApiKey() {
 
 export async function getApiKey() {
   try {
-    const { database } = getFirebaseAdmin();
-    const appRef = database.ref('app/apiKey');
-    const snapshot = await appRef.once('value');
+    const dbRef = ref(database);
+    const snapshot = await get(child(dbRef, 'app/apiKey'));
     const apiKey = snapshot.exists() ? snapshot.val() : null;
     return { success: true, data: { apiKey } };
   } catch (error: any) {
@@ -60,9 +62,8 @@ export async function getApiKey() {
 
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
-    const { database } = getFirebaseAdmin();
-    const switchRef = database.ref(`app/switchStates/${switchId}`);
-    await switchRef.set({ name, state });
+    const switchRef = ref(database, `app/switchStates/${switchId}`);
+    await set(switchRef, { name, state });
     return { success: true };
   } catch (error: any) {
     console.error(`Error updating switch ${switchId}:`, error);
@@ -72,9 +73,8 @@ export async function updateSwitchState(switchId: number, name: string, state: b
 
 export async function getSwitchStates() {
   try {
-    const { database } = getFirebaseAdmin();
-    const switchesRef = database.ref('app/switchStates');
-    const snapshot = await switchesRef.once('value');
+    const switchesRef = ref(database, 'app/switchStates');
+    const snapshot = await get(switchesRef);
     const switchStates = snapshot.exists() ? snapshot.val() : null;
     return { success: true, data: switchStates };
   } catch (error: any) {

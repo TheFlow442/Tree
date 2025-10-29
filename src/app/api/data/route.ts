@@ -1,17 +1,19 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getFirebaseAdmin } from '@/firebase/server';
+import { initializeFirebase } from '@/firebase';
+import { ref, get, child, push, set } from 'firebase/database';
+
+// Initialize on the server for the API route
+const { database } = initializeFirebase();
 
 export async function POST(request: NextRequest) {
   try {
     const apiKey = request.headers.get('Device-API-Key');
     const body = await request.json();
     
-    const { database } = getFirebaseAdmin();
-
     // Fetch the expected API key from the database
-    const appRef = database.ref('app/apiKey');
-    const snapshot = await appRef.once('value');
+    const dbRef = ref(database);
+    const snapshot = await get(child(dbRef, 'app/apiKey'));
     const expectedApiKey = snapshot.exists() ? snapshot.val() : null;
 
     if (!apiKey || apiKey !== expectedApiKey) {
@@ -22,10 +24,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const energyDataRef = database.ref('app/energyData');
-    const newEnergyDataRef = energyDataRef.push();
+    const energyDataRef = ref(database, 'app/energyData');
+    const newEnergyDataRef = push(energyDataRef);
     
-    await newEnergyDataRef.set({
+    await set(newEnergyDataRef, {
         ...body,
         timestamp: new Date().toISOString(),
     });
