@@ -4,9 +4,26 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
-import { getFirebaseAdmin } from '@/firebase/server';
-import { ref, set, get } from 'firebase/database';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getDatabase, ref, set, get } from 'firebase/database';
+import { firebaseConfig } from '@/firebase/config';
 import { randomUUID } from 'crypto';
+
+// Helper function to initialize Firebase on the server
+function getFirebaseServer() {
+  if (getApps().some(app => app.name === 'server-app')) {
+    const serverApp = getApp('server-app');
+    return {
+      database: getDatabase(serverApp),
+    };
+  }
+
+  const serverApp = initializeApp(firebaseConfig, 'server-app');
+  return {
+    database: getDatabase(serverApp),
+  };
+}
+
 
 export async function runIntelligentSwitchControl(input: IntelligentSwitchControlInput) {
   try {
@@ -35,7 +52,7 @@ export async function runEnergyPrediction() {
 export async function generateApiKey() {
   try {
     const apiKey = randomUUID();
-    const { database } = getFirebaseAdmin();
+    const { database } = getFirebaseServer();
     const appRef = ref(database, 'app/apiKey');
     await set(appRef, apiKey);
     return { success: true, data: { apiKey } };
@@ -47,7 +64,7 @@ export async function generateApiKey() {
 
 export async function getApiKey() {
   try {
-    const { database } = getFirebaseAdmin();
+    const { database } = getFirebaseServer();
     const appRef = ref(database, 'app/apiKey');
     const snapshot = await get(appRef);
     const apiKey = snapshot.exists() ? snapshot.val() : null;
@@ -60,7 +77,7 @@ export async function getApiKey() {
 
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
-    const { database } = getFirebaseAdmin();
+    const { database } = getFirebaseServer();
     const switchRef = ref(database, `app/switchStates/${switchId}`);
     await set(switchRef, { name, state });
     return { success: true };
@@ -72,7 +89,7 @@ export async function updateSwitchState(switchId: number, name: string, state: b
 
 export async function getSwitchStates() {
   try {
-    const { database } = getFirebaseAdmin();
+    const { database } = getFirebaseServer();
     const switchesRef = ref(database, 'app/switchStates');
     const snapshot = await get(switchesRef);
     const switchStates = snapshot.exists() ? snapshot.val() : null;

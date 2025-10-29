@@ -1,14 +1,31 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getFirebaseAdmin } from '@/firebase/server';
-import { ref, push, set, get } from 'firebase/database';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getDatabase, ref, push, set, get } from 'firebase/database';
+import { firebaseConfig } from '@/firebase/config';
+
+
+// Helper function to initialize Firebase on the server for API routes
+function getFirebaseApi() {
+  if (getApps().some(app => app.name === 'api-route-app')) {
+    const apiApp = getApp('api-route-app');
+    return {
+      database: getDatabase(apiApp),
+    };
+  }
+
+  const apiApp = initializeApp(firebaseConfig, 'api-route-app');
+  return {
+    database: getDatabase(apiApp),
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
     const apiKey = request.headers.get('Device-API-Key');
     const body = await request.json();
     
-    const { database } = getFirebaseAdmin();
+    const { database } = getFirebaseApi();
 
     // Fetch the expected API key from the database
     const appRef = ref(database, `app/apiKey`);
