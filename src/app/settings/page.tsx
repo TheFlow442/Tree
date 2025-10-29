@@ -26,38 +26,58 @@ export default function SettingsPage() {
   const { toast } = useToast();
   
   useEffect(() => {
-    setIsLoading(true);
-    getApiKey().then(result => {
-      if(result.success) {
-        setDeviceApiKey(result.data.apiKey);
-      } else {
-          toast({
+    async function fetchKey() {
+      setIsLoading(true);
+      try {
+        const result = await getApiKey();
+        if(result.success) {
+          setDeviceApiKey(result.data.apiKey);
+        } else {
+            toast({
+            variant: "destructive",
+            title: "Error",
+            description: result.error || "Could not fetch your Device API key.",
+          });
+        }
+      } catch (e: any) {
+        toast({
           variant: "destructive",
           title: "Error",
-          description: "Could not fetch your Device API key.",
+          description: e.message || "Could not fetch your Device API key.",
         });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    }
+    fetchKey();
   }, [toast]);
 
   const handleGenerateKey = async () => {
     setIsGenerating(true);
-    const result = await generateApiKey();
-    if (result.success && result.data?.apiKey) {
-      setDeviceApiKey(result.data.apiKey);
-      toast({
-        title: "Device API Key Generated",
-        description: "Your new device API key is ready.",
-      });
-    } else {
-      toast({
+    try {
+      const result = await generateApiKey();
+      if (result.success && result.data?.apiKey) {
+        setDeviceApiKey(result.data.apiKey);
+        toast({
+          title: "Device API Key Generated",
+          description: "Your new device API key is ready.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Generation Failed",
+          description: result.error || 'An unknown error occurred.',
+        });
+      }
+    } catch(e: any) {
+       toast({
         variant: "destructive",
         title: "Generation Failed",
-        description: result.error,
+        description: e.message || 'An unknown error occurred.',
       });
+    } finally {
+      setIsGenerating(false);
     }
-    setIsGenerating(false);
   };
   
   const copyToClipboard = (key: string, type: 'device' | 'project') => {
