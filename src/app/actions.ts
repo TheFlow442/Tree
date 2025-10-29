@@ -1,9 +1,10 @@
+
 'use server';
 
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HISTORICAL_DATA } from '@/lib/data';
-import { initializeFirebase } from '@/firebase';
+import { getFirebaseAdmin } from '@/firebase/server';
 import { ref, set, get } from 'firebase/database';
 import { randomUUID } from 'crypto';
 
@@ -34,7 +35,7 @@ export async function runEnergyPrediction() {
 export async function generateApiKey() {
   try {
     const apiKey = randomUUID();
-    const { database } = initializeFirebase();
+    const { database } = getFirebaseAdmin();
     const appRef = ref(database, 'app/apiKey');
     await set(appRef, apiKey);
     return { success: true, data: { apiKey } };
@@ -46,7 +47,7 @@ export async function generateApiKey() {
 
 export async function getApiKey() {
   try {
-    const { database } = initializeFirebase();
+    const { database } = getFirebaseAdmin();
     const appRef = ref(database, 'app/apiKey');
     const snapshot = await get(appRef);
     const apiKey = snapshot.exists() ? snapshot.val() : null;
@@ -59,7 +60,7 @@ export async function getApiKey() {
 
 export async function updateSwitchState(switchId: number, name: string, state: boolean) {
   try {
-    const { database } = initializeFirebase();
+    const { database } = getFirebaseAdmin();
     const switchRef = ref(database, `app/switchStates/${switchId}`);
     await set(switchRef, { name, state });
     return { success: true };
@@ -71,7 +72,7 @@ export async function updateSwitchState(switchId: number, name: string, state: b
 
 export async function getSwitchStates() {
   try {
-    const { database } = initializeFirebase();
+    const { database } = getFirebaseAdmin();
     const switchesRef = ref(database, 'app/switchStates');
     const snapshot = await get(switchesRef);
     const switchStates = snapshot.exists() ? snapshot.val() : null;

@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { initializeFirebase } from '@/firebase';
+import { getFirebaseAdmin } from '@/firebase/server';
 import { ref, push, set, get } from 'firebase/database';
 
 export async function POST(request: NextRequest) {
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const apiKey = request.headers.get('Device-API-Key');
     const body = await request.json();
     
-    const { database } = initializeFirebase();
+    const { database } = getFirebaseAdmin();
 
     // Fetch the expected API key from the database
     const appRef = ref(database, `app/apiKey`);
