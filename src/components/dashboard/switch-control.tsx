@@ -1,4 +1,5 @@
-import { Lightbulb, Thermometer, Droplets, Utensils, TreePine, BrainCircuit, Loader2 } from 'lucide-react';
+
+import { BrainCircuit, Loader2, ToggleRight } from 'lucide-react';
 import type { SwitchState } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -7,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
 const switchIcons: { [key: string]: React.ReactNode } = {
-  "Living Room Lights": <Lightbulb className="h-5 w-5" />,
-  "Air Conditioner": <Thermometer className="h-5 w-5" />,
-  "Water Heater": <Droplets className="h-5 w-5" />,
-  "Kitchen Appliances": <Utensils className="h-5 w-5" />,
-  "Outdoor Lighting": <TreePine className="h-5 w-5" />,
+  "Switch 1": <ToggleRight className="h-5 w-5" />,
+  "Switch 2": <ToggleRight className="h-5 w-5" />,
+  "Switch 3": <ToggleRight className="h-5 w-5" />,
+  "Switch 4": <ToggleRight className="h-5 w-5" />,
+  "Switch 5": <ToggleRight className="h-5 w-5" />,
 };
 
 type SwitchControlProps = {
@@ -46,7 +47,7 @@ export function SwitchControl({
           {switches.map(s => (
             <div key={s.id} className="flex items-center justify-between p-4 border rounded-lg bg-background/50 hover:bg-muted/50 transition-colors">
               <div className="flex items-center space-x-3">
-                <div className="text-primary">{switchIcons[s.name]}</div>
+                <div className="text-primary">{switchIcons[s.name] || <ToggleRight className="h-5 w-5" />}</div>
                 <label htmlFor={`switch-${s.id}`} className="text-sm font-medium">{s.name}</label>
               </div>
               <Switch

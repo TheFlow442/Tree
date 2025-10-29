@@ -1,3 +1,4 @@
+
 import type { SwitchState, HistoricalDataPoint, EnergyData } from '@/lib/types';
 
 export const INITIAL_ENERGY_DATA: EnergyData = {
@@ -12,11 +13,11 @@ export const INITIAL_ENERGY_DATA: EnergyData = {
 };
 
 export const INITIAL_SWITCHES: SwitchState[] = [
-  { id: 1, name: 'Living Room Lights', state: true },
-  { id: 2, name: 'Air Conditioner', state: false },
-  { id: 3, name: 'Water Heater', state: false },
-  { id: 4, name: 'Kitchen Appliances', state: true },
-  { id: 5, name: 'Outdoor Lighting', state: false },
+  { id: 1, name: 'Switch 1', state: true },
+  { id: 2, name: 'Switch 2', state: false },
+  { id: 3, name: 'Switch 3', state: false },
+  { id: 4, name: 'Switch 4', state: true },
+  { id: 5, name: 'Switch 5', state: false },
 ];
 
 export const HISTORICAL_DATA: HistoricalDataPoint[] = [
