@@ -1,319 +1,54 @@
 /**
  * =================================================================================================
- * RECOMMENDED FIRMWARE FOR SOLARIS智控 ESP32
+ * SIMPLE WIFI CONNECTION TEST FOR ESP32
  * =================================================================================================
  *
- * This code combines your detailed sensor and hardware logic with the modern, efficient, and 
- * real-time Firebase communication method used by the web application.
- *
- * This version is corrected to be compatible with the widely used `Firebase_ESP_Client.h` library.
+ * This is a minimal sketch to test if your ESP32 can connect to your WiFi network.
+ * It will print the connection status to the Serial Monitor.
  *
  * How to Use:
- * 1.  In Arduino IDE, go to Sketch > Include Library > Manage Libraries...
- * 2.  Search for "Firebase ESP Client" (by Mobizt) and install it if you haven't already.
- * 3.  Fill in your WiFi and Firebase credentials in the placeholders below.
- * 4.  Copy this entire file into your Arduino sketch.
- * 5.  Upload to your ESP32.
+ * 1.  Fill in your WiFi credentials below if they are different.
+ * 2.  Upload this code to your ESP32.
+ * 3.  Open the Arduino IDE's Serial Monitor (set to 115200 baud).
+ * 4.  Check the output to see if the connection is successful.
  *
  */
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <LiquidCrystal.h>
-#include <DHT.h>
-#include "Firebase_ESP_Client.h" // Use the modern Mobizt library
-#include <HTTPClient.h>     
 
 // ===== 1. FILL IN YOUR CREDENTIALS =====
-#define WIFI_SSID "Energy"
-#define WIFI_PASSWORD "managementl"
+const char* ssid = "Energy";
+const char* password = "managementl";
 
-// This is the "Firebase Project API Key" found on your web app's Settings page.
-// It identifies your Firebase project.
-#define API_KEY "AIzaSyBUsB3M6UuHkAiv9FQO9z3uB-JQmfKOPlg" 
-
-// Found in your Firebase Console -> Realtime Database. It looks like "https://<project-id>-default-rtdb.firebaseio.com".
-#define DATABASE_URL "https://smart-solar-agent-default-rtdb.firebaseio.com"       
-
-// This is the "Your Device API Key" generated on your web app's Settings page.
-// It authenticates your ESP32 when it sends data to your web app's API.
-#define DEVICE_API_KEY "30302351-a863-4571-b3cb-1689a57156c1"   
-
-// ===== Pins =====
-#define Relay1 13
-#define Relay2 14
-#define Relay3 27
-#define Relay4 26
-#define Relay5 25
-const int relayPins[] = {Relay1, Relay2, Relay3, Relay4, Relay5};
-
-#define CURRENT_PIN 32
-#define VOLTAGE_PIN 34
-#define LDR_PIN 35
-#define DHT_PIN 23
-#define cnst 33
-
-// LCD (4-bit mode)
-LiquidCrystal lcd(22, 21, 19, 18, 5, 4);
-
-// DHT
-#define DHTTYPE DHT11
-DHT dht(DHT_PIN, DHTTYPE);
-
-// ===== Firebase Objects =====
-FirebaseData stream; // For receiving real-time switch data
-FirebaseData fbdo;   // For sending sensor data
-FirebaseAuth auth;
-FirebaseConfig config;
-
-// ===== Calibration & Global Variables =====
-const float VREF = 3.3;
-const int ADC_MAX = 4095;
-float currentOffset = 2048.0;
-const float CURRENT_CALIBRATION_FACTOR = 0.185;
-const float VOLTAGE_DIVIDER_RATIO = (47.0 + 10.0) / 10.0;
-const float VOLTAGE_CALIBRATION = 1.25;
-
-volatile float voltageRMS = 0;
-volatile float currentRMS = 0;
-volatile float power = 0;
-volatile float temp = 0;
-volatile float hum = 0;
-volatile int ldrValue = 0;
-
-unsigned long lastSensorSendMillis = 0;
-
-// =================================================================================================
-// SENSOR READING AND DATA SENDING LOGIC (Your existing functions)
-// =================================================================================================
-void calibrateCurrentSensor() {
-  Serial.println("Calibrating current sensor offset...");
-  long sum = 0;
-  for (int i = 0; i < 1000; i++) {
-    sum += analogRead(CURRENT_PIN);
-    delay(1);
-  }
-  currentOffset = sum / 1000.0;
-  Serial.print("Current sensor offset: "); Serial.println(currentOffset);
-}
-
-float readVoltageRMS() {
-  const int samples = 100;
-  long sum = 0;
-  for (int i = 0; i < samples; i++) {
-    int raw = analogRead(VOLTAGE_PIN);
-    sum += (raw - 2048) * (raw - 2048);
-    delayMicroseconds(200);
-  }
-  float rms = sqrt(sum / samples);
-  float vRMS = (rms * VREF / ADC_MAX) * VOLTAGE_DIVIDER_RATIO * VOLTAGE_CALIBRATION;
-  return vRMS;
-}
-
-float readCurrentRMS() {
-  const int samples = 200;
-  long sum = 0;
-  for (int i = 0; i < samples; i++) {
-    int raw = analogRead(CURRENT_PIN);
-    currentOffset = 0.999 * currentOffset + 0.001 * raw;
-    int centered = raw - currentOffset;
-    sum += (long)centered * (long)centered;
-  }
-  float rms = sqrt(sum / samples);
-  float vRMS = (rms * VREF) / ADC_MAX;
-  float iRMS = vRMS / CURRENT_CALIBRATION_FACTOR;
-  return (iRMS < 0.05) ? 0 : iRMS;
-}
-
-float readLux() {
-  int raw = analogRead(LDR_PIN);
-  return 4095 - raw;
-}
-
-// Function to read all sensors
-void readAllSensors() {
-  voltageRMS = readVoltageRMS();
-  currentRMS = readCurrentRMS();
-  power = voltageRMS * currentRMS;
-
-  float t = dht.readTemperature();
-  float h = dht.readHumidity();
-  if (!isnan(t) && !isnan(h)) {
-    temp = t;
-    hum = h;
-  }
-  ldrValue = readLux();
-}
-
-// Function to send sensor data to the web app via the /api/data endpoint
-void sendSensorData() {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi not connected, skipping sensor data send.");
-    return;
-  }
-
-  HTTPClient http;
-  // ===== IMPORTANT: You must deploy your web app to get this URL. =====
-  // Replace "&lt;YOUR_APP_URL&gt;" with the URL provided by Firebase App Hosting after you deploy.
-  String serverUrl = "https://&lt;YOUR_APP_URL&gt;/api/data"; 
-  
-  http.begin(serverUrl);
-  http.addHeader("Content-Type", "application/json");
-  http.addHeader("Device-API-Key", DEVICE_API_KEY);
-
-  // Create JSON payload
-  String jsonPayload = "{";
-  jsonPayload += "\"voltage\":" + String(voltageRMS) + ",";
-  jsonPayload += "\"current\":" + String(currentRMS) + ",";
-  jsonPayload += "\"power\":" + String(power) + ",";
-  jsonPayload += "\"temperature\":" + String(temp) + ",";
-  jsonPayload += "\"humidity\":" + String(hum);
-  jsonPayload += "}";
-
-  Serial.println("Sending sensor data to web app...");
-  Serial.println(jsonPayload);
-
-  int httpResponseCode = http.POST(jsonPayload);
-
-  if (httpResponseCode > 0) {
-    String response = http.getString();
-    Serial.println("HTTP Response code: " + String(httpResponseCode));
-    Serial.println(response);
-  } else {
-    Serial.println("Error on sending POST: " + String(httpResponseCode));
-  }
-  
-  http.end();
-}
-
-
-void displayOnLCD() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("T:");
-  lcd.print(temp, 1);
-  lcd.print("C H:");
-  lcd.print(hum, 0);
-  lcd.print("%");
-
-  lcd.setCursor(0, 1);
-  lcd.print("V:");
-  lcd.print(voltageRMS, 0);
-  lcd.print("v I:");
-  lcd.print(currentRMS, 2);
-  lcd.print("A");
-}
-
-// =================================================================================================
-// SETUP AND LOOP
-// =================================================================================================
 void setup() {
+  // Start the Serial Monitor to see output
   Serial.begin(115200);
-  analogReadResolution(12);
-  pinMode(cnst, OUTPUT);
-  analogWrite(cnst, 80);
+  delay(100); 
 
-  for (int pin : relayPins) {
-    pinMode(pin, OUTPUT);
-    digitalWrite(pin, LOW);
-  }
+  Serial.println();
+  Serial.print("Connecting to WiFi network: ");
+  Serial.println(ssid);
 
-  dht.begin();
-  lcd.begin(16, 2);
-  lcd.clear();
-  lcd.print("System Booting...");
-  delay(1500);
+  // Set WiFi to station mode and begin connection
+  // This is a more reliable way to start the connection
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  delay(500);
 
-  // --- Connect to WiFi ---
-  lcd.clear();
-  lcd.print("Connecting WiFi...");
-  WiFi.mode(WIFI_STA); // CORRECTED: Explicitly set WiFi to Station mode
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  delay(500); // CORRECTED: Add a short delay
+  // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  lcd.clear();
-  lcd.print("WiFi Connected!");
-  Serial.println("\nWiFi Connected!");
-  delay(1500);
 
-  // --- Configure Firebase ---
-  lcd.clear();
-  lcd.print("Connecting FB...");
-  config.api_key = API_KEY;
-  config.database_url = DATABASE_URL;
-
-  // Use Anonymous Sign-in (more secure and modern)
-  config.signer.test_mode = true; 
-  
-  Firebase.begin(&config, &auth);
-  Firebase.reconnectWiFi(true);
-
-  calibrateCurrentSensor();
-  lcd.clear();
-  lcd.print("System Ready!");
-
-  // --- START REAL-TIME STREAM for Switch Control ---
-  // This is the path the web app writes switch commands to.
-  String streamPath = "/app/switchStates"; 
-  if (!Firebase.RTDB.beginStream(&stream, streamPath)) {
-    Serial.printf("!!! STREAM ERROR: Could not begin stream at %s (%s)\n", streamPath.c_str(), stream.errorReason().c_str());
-  } else {
-    Serial.printf("Successfully started stream at %s\n", streamPath.c_str());
-  }
+  Serial.println("");
+  Serial.println("WiFi connected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void loop() {
-  // === THIS IS THE NEW, ROBUST WAY TO HANDLE FIREBASE REAL-TIME DATA ===
-  // Instead of a callback, we manually check for new data in the loop.
-  // This is compatible with a wider range of Firebase library versions.
-  if (Firebase.RTDB.readStream(&stream)) {
-    if (stream.streamAvailable()) {
-      // A change was detected in the database.
-      // The `stream.dataPath()` gives the specific path that changed.
-      // The `stream.dataType()` tells you the type of data.
-      // The `stream.boolData()` gets the boolean value.
-      Serial.printf("STREAM DATA: Path = %s, Type = %s, Data = %s\n",
-                    stream.dataPath().c_str(),
-                    stream.dataType().c_str(),
-                    stream.stringData().c_str());
-      
-      if (stream.dataType() == "boolean") {
-        String path = stream.dataPath();
-        // Remove leading slash, e.g., "/1/state" -> "1/state"
-        if (path.startsWith("/")) {
-          path = path.substring(1);
-        }
-
-        // Get the switch ID, which is the part of the path before the next slash
-        int slashIndex = path.indexOf("/");
-        if (slashIndex > 0) {
-          int switchId = path.substring(0, slashIndex).toInt();
-          
-          if (switchId >= 1 && switchId <= 5) {
-            bool switchState = stream.boolData(); // Get boolean value from the stream
-            int pin = relayPins[switchId - 1]; // Array is 0-indexed
-            
-            Serial.printf("CONTROLLING: Switch ID %d on Pin %d to State %s\n", switchId, pin, switchState ? "ON" : "OFF");
-            digitalWrite(pin, switchState ? HIGH : LOW);
-          }
-        }
-      }
-    }
-  }
-
-
-  // --- Your existing sensor reading and display logic ---
-  readAllSensors();
-  displayOnLCD();
-
-  // Send sensor data to the web app every 10 seconds
-  if (millis() - lastSensorSendMillis > 10000) {
-    lastSensorSendMillis = millis();
-    sendSensorData();
-  }
-
-  delay(100); // Short delay in the main loop
+  // The loop is empty as we only need to connect once in setup.
+  delay(10000); 
 }
