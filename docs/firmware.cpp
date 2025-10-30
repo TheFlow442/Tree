@@ -6,11 +6,11 @@
  * This code combines your detailed sensor and hardware logic with the modern, efficient, and 
  * real-time Firebase communication method used by the web application.
  *
- * This version is corrected to be compatible with the widely used `FirebaseESP32.h` library.
+ * This version is corrected to be compatible with the widely used `Firebase_ESP_Client.h` library.
  *
  * How to Use:
  * 1.  In Arduino IDE, go to Sketch > Include Library > Manage Libraries...
- * 2.  Search for "Firebase ESP32" (by Mobizt) and install it if you haven't already.
+ * 2.  Search for "Firebase ESP Client" (by Mobizt) and install it if you haven't already.
  * 3.  Fill in your WiFi and Firebase credentials in the placeholders below.
  * 4.  Copy this entire file into your Arduino sketch.
  * 5.  Upload to your ESP32.
@@ -21,7 +21,7 @@
 #include <WiFi.h>
 #include <LiquidCrystal.h>
 #include <DHT.h>
-#include <FirebaseESP32.h> // Using the library compatible with your setup
+#include "Firebase_ESP_Client.h" // CORRECTED: Use the modern Mobizt library
 #include <HTTPClient.h>     
 
 // ===== 1. FILL IN YOUR CREDENTIALS =====
@@ -89,11 +89,11 @@ unsigned long lastSensorSendMillis = 0;
 // This function is automatically called by the Firebase library when a switch state changes
 // in the database. This is the core of the real-time control.
 // =================================================================================================
-void streamCallback(FirebaseStream data) { // CORRECTED: Changed parameter type back to FirebaseStream
+void streamCallback(StreamData data) { // CORRECTED: Parameter type is StreamData for the Mobizt library.
   Serial.printf("STREAM DATA: Path = %s, Type = %s, Data = %s\n",
-                data.streamPath().c_str(), // CORRECTED: Use .streamPath()
+                data.dataPath().c_str(),
                 data.dataType().c_str(),
-                data.stringData().c_str()); // CORRECTED: Use .stringData() or specific type
+                data.payload().c_str());
 
   // Example data.dataPath() will be "/1/state" for Switch 1
   if (data.dataType() == "boolean") {
@@ -109,7 +109,7 @@ void streamCallback(FirebaseStream data) { // CORRECTED: Changed parameter type 
       int switchId = path.substring(0, slashIndex).toInt();
       
       if (switchId >= 1 && switchId <= 5) {
-        bool switchState = data.boolData();
+        bool switchState = data.to<bool>(); // CORRECTED: Use .to<type>() to get data
         int pin = relayPins[switchId - 1]; // Array is 0-indexed
         
         Serial.printf("CONTROLLING: Switch ID %d on Pin %d to State %s\n", switchId, pin, switchState ? "ON" : "OFF");
@@ -299,11 +299,11 @@ void setup() {
   // --- START REAL-TIME STREAM for Switch Control ---
   // This is the path the web app writes switch commands to.
   String streamPath = "/app/switchStates"; 
-  if (!Firebase.beginStream(stream, streamPath)) { // CORRECTED: Removed .RTDB
+  if (!Firebase.RTDB.beginStream(&stream, streamPath)) { // CORRECTED: Added .RTDB prefix
     Serial.printf("!!! STREAM ERROR: Could not begin stream at %s (%s)\n", streamPath.c_str(), stream.errorReason().c_str());
   } else {
     Serial.printf("Successfully started stream at %s\n", streamPath.c_str());
-    Firebase.setStreamCallback(stream, streamCallback, streamTimeoutCallback); // CORRECTED: Removed .RTDB
+    Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback); // CORRECTED: Added .RTDB prefix
   }
 }
 
@@ -319,3 +319,6 @@ void loop() {
 
   delay(2000); // Main loop delay
 }
+
+
+    
