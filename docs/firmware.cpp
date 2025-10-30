@@ -227,7 +227,9 @@ void setup() {
   // --- Connect to WiFi ---
   lcd.clear();
   lcd.print("Connecting WiFi...");
+  WiFi.mode(WIFI_STA); // CORRECTED: Explicitly set WiFi to Station mode
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  delay(500); // CORRECTED: Add a short delay
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
