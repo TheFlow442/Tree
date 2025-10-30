@@ -21,7 +21,7 @@
 #include <WiFi.h>
 #include <LiquidCrystal.h>
 #include <DHT.h>
-#include "Firebase_ESP_Client.h" // CORRECTED: Use the modern Mobizt library
+#include "Firebase_ESP_Client.h" // Use the modern Mobizt library
 #include <HTTPClient.h>     
 
 // ===== 1. FILL IN YOUR CREDENTIALS =====
@@ -82,49 +82,6 @@ volatile float hum = 0;
 volatile int ldrValue = 0;
 
 unsigned long lastSensorSendMillis = 0;
-
-// =================================================================================================
-// REAL-TIME STREAM CALLBACK (Handles incoming switch commands)
-// =================================================================================================
-// This function is automatically called by the Firebase library when a switch state changes
-// in the database. This is the core of the real-time control.
-// =================================================================================================
-void streamCallback(StreamData data) { // CORRECTED: Parameter type is StreamData for the Mobizt library.
-  Serial.printf("STREAM DATA: Path = %s, Type = %s, Data = %s\n",
-                data.dataPath().c_str(),
-                data.dataType().c_str(),
-                data.payload().c_str());
-
-  // Example data.dataPath() will be "/1/state" for Switch 1
-  if (data.dataType() == "boolean") {
-    String path = data.dataPath();
-    // Remove leading slash, e.g., "/1/state" -> "1/state"
-    if (path.startsWith("/")) {
-      path = path.substring(1);
-    }
-
-    // Get the switch ID, which is the part of the path before the next slash
-    int slashIndex = path.indexOf("/");
-    if (slashIndex > 0) {
-      int switchId = path.substring(0, slashIndex).toInt();
-      
-      if (switchId >= 1 && switchId <= 5) {
-        bool switchState = data.to<bool>(); // CORRECTED: Use .to<type>() to get data
-        int pin = relayPins[switchId - 1]; // Array is 0-indexed
-        
-        Serial.printf("CONTROLLING: Switch ID %d on Pin %d to State %s\n", switchId, pin, switchState ? "ON" : "OFF");
-        digitalWrite(pin, switchState ? HIGH : LOW);
-      }
-    }
-  }
-}
-
-void streamTimeoutCallback(bool timeout) {
-  if (timeout) {
-    Serial.println("Stream timeout, resuming...");
-  }
-}
-
 
 // =================================================================================================
 // SENSOR READING AND DATA SENDING LOGIC (Your existing functions)
@@ -299,15 +256,54 @@ void setup() {
   // --- START REAL-TIME STREAM for Switch Control ---
   // This is the path the web app writes switch commands to.
   String streamPath = "/app/switchStates"; 
-  if (!Firebase.RTDB.beginStream(&stream, streamPath)) { // CORRECTED: Added .RTDB prefix
+  if (!Firebase.RTDB.beginStream(&stream, streamPath)) {
     Serial.printf("!!! STREAM ERROR: Could not begin stream at %s (%s)\n", streamPath.c_str(), stream.errorReason().c_str());
   } else {
     Serial.printf("Successfully started stream at %s\n", streamPath.c_str());
-    Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback); // CORRECTED: Added .RTDB prefix
   }
 }
 
 void loop() {
+  // === THIS IS THE NEW, ROBUST WAY TO HANDLE FIREBASE REAL-TIME DATA ===
+  // Instead of a callback, we manually check for new data in the loop.
+  // This is compatible with a wider range of Firebase library versions.
+  if (Firebase.RTDB.readStream(&stream)) {
+    if (stream.streamAvailable()) {
+      // A change was detected in the database.
+      // The `stream.dataPath()` gives the specific path that changed.
+      // The `stream.dataType()` tells you the type of data.
+      // The `stream.boolData()` gets the boolean value.
+      Serial.printf("STREAM DATA: Path = %s, Type = %s, Data = %s\n",
+                    stream.dataPath().c_str(),
+                    stream.dataType().c_str(),
+                    stream.stringData().c_str());
+      
+      if (stream.dataType() == "boolean") {
+        String path = stream.dataPath();
+        // Remove leading slash, e.g., "/1/state" -> "1/state"
+        if (path.startsWith("/")) {
+          path = path.substring(1);
+        }
+
+        // Get the switch ID, which is the part of the path before the next slash
+        int slashIndex = path.indexOf("/");
+        if (slashIndex > 0) {
+          int switchId = path.substring(0, slashIndex).toInt();
+          
+          if (switchId >= 1 && switchId <= 5) {
+            bool switchState = stream.boolData(); // Get boolean value from the stream
+            int pin = relayPins[switchId - 1]; // Array is 0-indexed
+            
+            Serial.printf("CONTROLLING: Switch ID %d on Pin %d to State %s\n", switchId, pin, switchState ? "ON" : "OFF");
+            digitalWrite(pin, switchState ? HIGH : LOW);
+          }
+        }
+      }
+    }
+  }
+
+
+  // --- Your existing sensor reading and display logic ---
   readAllSensors();
   displayOnLCD();
 
@@ -317,8 +313,5 @@ void loop() {
     sendSensorData();
   }
 
-  delay(2000); // Main loop delay
+  delay(100); // Short delay in the main loop
 }
-
-
-    
