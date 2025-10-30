@@ -6,18 +6,11 @@
  * This code combines your detailed sensor and hardware logic with the modern, efficient, and 
  * real-time Firebase communication method used by the web application.
  *
- * Key Improvements:
- * 1.  Uses the modern and stable "Firebase ESP32 Client" library by Mobizt.
- * 2.  Uses efficient, real-time streaming for switch control instead of inefficient polling. This
- *     means Firebase PUSHES changes to the ESP32 instantly.
- * 3.  Authenticates securely using Firebase's modern anonymous sign-in.
- * 4.  Uses the correct database paths that match the web application (`/app/switchStates`).
- * 5.  Integrates your existing sensor functions (readVoltageRMS, readCurrentRMS, etc.) and
- *     your LCD display logic.
+ * This version is corrected to be compatible with the widely used `FirebaseESP32.h` library.
  *
  * How to Use:
  * 1.  In Arduino IDE, go to Sketch > Include Library > Manage Libraries...
- * 2.  Search for "Firebase ESP32 Client" (by Mobizt) and install it.
+ * 2.  Search for "Firebase ESP32" (by Mobizt) and install it if you haven't already.
  * 3.  Fill in your WiFi and Firebase credentials in the placeholders below.
  * 4.  Copy this entire file into your Arduino sketch.
  * 5.  Upload to your ESP32.
@@ -28,9 +21,8 @@
 #include <WiFi.h>
 #include <LiquidCrystal.h>
 #include <DHT.h>
-#include "Firebase_ESP_Client.h" // CORRECTED: This is the correct include for the Mobizt library.
-#include <HTTPClient.h>         // CORRECTED: Changed from <HttpClient.h> to <HTTPClient.h> for ESP32's native library.
-
+#include <FirebaseESP32.h> // Using the library compatible with your setup
+#include <HTTPClient.h>     
 
 // ===== 1. FILL IN YOUR CREDENTIALS =====
 #define WIFI_SSID "Energy"
@@ -97,11 +89,11 @@ unsigned long lastSensorSendMillis = 0;
 // This function is automatically called by the Firebase library when a switch state changes
 // in the database. This is the core of the real-time control.
 // =================================================================================================
-void streamCallback(StreamData data) { // CORRECTED: Changed parameter type from FirebaseStream to StreamData for the Mobizt library.
+void streamCallback(FirebaseStream data) { // CORRECTED: Changed parameter type back to FirebaseStream
   Serial.printf("STREAM DATA: Path = %s, Type = %s, Data = %s\n",
-                data.dataPath().c_str(),
+                data.streamPath().c_str(), // CORRECTED: Use .streamPath()
                 data.dataType().c_str(),
-                data.payload().c_str());
+                data.stringData().c_str()); // CORRECTED: Use .stringData() or specific type
 
   // Example data.dataPath() will be "/1/state" for Switch 1
   if (data.dataType() == "boolean") {
@@ -307,11 +299,11 @@ void setup() {
   // --- START REAL-TIME STREAM for Switch Control ---
   // This is the path the web app writes switch commands to.
   String streamPath = "/app/switchStates"; 
-  if (!Firebase.RTDB.beginStream(&stream, streamPath)) { // CORRECTED: Added .RTDB prefix
+  if (!Firebase.beginStream(stream, streamPath)) { // CORRECTED: Removed .RTDB
     Serial.printf("!!! STREAM ERROR: Could not begin stream at %s (%s)\n", streamPath.c_str(), stream.errorReason().c_str());
   } else {
     Serial.printf("Successfully started stream at %s\n", streamPath.c_str());
-    Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback); // CORRECTED: Added .RTDB prefix
+    Firebase.setStreamCallback(stream, streamCallback, streamTimeoutCallback); // CORRECTED: Removed .RTDB
   }
 }
 
