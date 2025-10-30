@@ -154,8 +154,8 @@ void sendSensorData() {
 
   HTTPClient http;
   // ===== IMPORTANT: You must deploy your web app to get this URL. =====
-  // Replace "<YOUR_APP_URL>" with the URL provided by Firebase App Hosting after you deploy.
-  String serverUrl = "https://<YOUR_APP_URL>/api/data"; 
+  // Replace "&lt;YOUR_APP_URL&gt;" with the URL provided by Firebase App Hosting after you deploy.
+  String serverUrl = "https://&lt;YOUR_APP_URL&gt;/api/data"; 
   
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
