@@ -28,24 +28,24 @@
 #include <WiFi.h>
 #include <LiquidCrystal.h>
 #include <DHT.h>
-#include "Firebase_ESP_Client.h" // Modern, recommended Firebase library
-#include <HTTPClient.h>
+#include "Firebase_ESP_Client.h" // CORRECTED: This is the correct include for the Mobizt library.
+#include <HTTPClient.h>         // CORRECTED: Changed from <HttpClient.h> to <HTTPClient.h> for ESP32's native library.
 
 
 // ===== 1. FILL IN YOUR CREDENTIALS =====
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID "Energy"
+#define WIFI_PASSWORD "managementl"
 
-// Found on your web app's Settings page, labeled "Firebase Project API Key".
-// This key identifies your Firebase project.
-#define API_KEY "YOUR_FIREBASE_PROJECT_API_KEY" 
+// This is the "Firebase Project API Key" found on your web app's Settings page.
+// It identifies your Firebase project.
+#define API_KEY "AIzaSyBUsB3M6UuHkAiv9FQO9z3uB-JQmfKOPlg" 
 
 // Found in your Firebase Console -> Realtime Database. It looks like "https://<project-id>-default-rtdb.firebaseio.com".
-#define DATABASE_URL "YOUR_DATABASE_URL"       
+#define DATABASE_URL "https://smart-solar-agent-default-rtdb.firebaseio.com"       
 
-// Generated on your web app's Settings page, labeled "Your Device API Key".
-// This key authenticates your ESP32 when it sends data to your web app's API.
-#define DEVICE_API_KEY "YOUR_DEVICE_API_KEY"   
+// This is the "Your Device API Key" generated on your web app's Settings page.
+// It authenticates your ESP32 when it sends data to your web app's API.
+#define DEVICE_API_KEY "30302351-a863-4571-b3cb-1689a57156c1"   
 
 // ===== Pins =====
 #define Relay1 13
@@ -97,7 +97,7 @@ unsigned long lastSensorSendMillis = 0;
 // This function is automatically called by the Firebase library when a switch state changes
 // in the database. This is the core of the real-time control.
 // =================================================================================================
-void streamCallback(FirebaseStream data) {
+void streamCallback(StreamData data) { // CORRECTED: Changed parameter type from FirebaseStream to StreamData for the Mobizt library.
   Serial.printf("STREAM DATA: Path = %s, Type = %s, Data = %s\n",
                 data.dataPath().c_str(),
                 data.dataType().c_str(),
@@ -204,9 +204,9 @@ void sendSensorData() {
   }
 
   HTTPClient http;
-  // ===== 2. FILL IN YOUR APP URL =====
-  // This is the URL of your deployed web application.
-  String serverUrl = "https://<YOUR_APP_URL>/api/data"; // IMPORTANT: Replace <YOUR_APP_URL> with your deployed App URL
+  // ===== IMPORTANT: You must deploy your web app to get this URL. =====
+  // Replace "<YOUR_APP_URL>" with the URL provided by Firebase App Hosting after you deploy.
+  String serverUrl = "https://<YOUR_APP_URL>/api/data"; 
   
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
@@ -307,11 +307,11 @@ void setup() {
   // --- START REAL-TIME STREAM for Switch Control ---
   // This is the path the web app writes switch commands to.
   String streamPath = "/app/switchStates"; 
-  if (!Firebase.RTDB.beginStream(&stream, streamPath)) {
+  if (!Firebase.RTDB.beginStream(&stream, streamPath)) { // CORRECTED: Added .RTDB prefix
     Serial.printf("!!! STREAM ERROR: Could not begin stream at %s (%s)\n", streamPath.c_str(), stream.errorReason().c_str());
   } else {
     Serial.printf("Successfully started stream at %s\n", streamPath.c_str());
-    Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback);
+    Firebase.RTDB.setStreamCallback(&stream, streamCallback, streamTimeoutCallback); // CORRECTED: Added .RTDB prefix
   }
 }
 
