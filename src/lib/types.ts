@@ -17,7 +17,8 @@ export type SwitchState = {
 
 export type HistoricalDataPoint = {
   month: string;
-  "Energy Consumption (kWh)": number;
+  consumption: number;
+  generation: number;
 };
 
 // This type is now extended by the Genkit flow's output type

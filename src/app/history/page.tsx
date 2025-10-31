@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -108,22 +107,24 @@ export default function HistoryPage() {
            <Card>
             <CardHeader>
               <CardTitle>Historical Data</CardTitle>
-              <CardDescription>A view of the monthly energy consumption data.</CardDescription>
+              <CardDescription>A view of the monthly energy data.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
-                <TableCaption>A list of your recent energy consumption records.</TableCaption>
+                <TableCaption>A list of your recent energy records.</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[100px]">Month</TableHead>
-                    <TableHead className="text-right">Energy Consumption (kWh)</TableHead>
+                    <TableHead className="text-right">Consumption (kWh)</TableHead>
+                    <TableHead className="text-right">Generation (kWh)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {HISTORICAL_DATA.map((data) => (
                     <TableRow key={data.month}>
                       <TableCell className="font-medium">{data.month}</TableCell>
-                      <TableCell className="text-right">{data['Energy Consumption (kWh)']}</TableCell>
+                      <TableCell className="text-right">{data.consumption}</TableCell>
+                      <TableCell className="text-right">{data.generation}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

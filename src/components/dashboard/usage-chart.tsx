@@ -1,6 +1,6 @@
 "use client"
 
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import type { HistoricalDataPoint } from '@/lib/types';
 
@@ -9,9 +9,13 @@ interface UsageChartProps {
 }
 
 const chartConfig = {
-  'Energy Consumption (kWh)': {
+  'consumption': {
     label: 'Consumption',
-    color: 'hsl(var(--primary))',
+    color: 'hsl(var(--chart-1))',
+  },
+  'generation': {
+    label: 'Generation',
+    color: 'hsl(var(--chart-2))',
   },
 } satisfies ChartConfig;
 
@@ -41,14 +45,25 @@ export function UsageChart({ data }: UsageChartProps) {
              tickLine={false}
              axisLine={false}
              tickMargin={8}
+             tickFormatter={(value) => `${value} kWh`}
           />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+          <Legend />
           <Line
-            dataKey="Energy Consumption (kWh)"
+            dataKey="consumption"
             type="monotone"
-            stroke="hsl(var(--primary))"
+            stroke="var(--color-consumption)"
             strokeWidth={2}
             dot={true}
+            name="Consumption"
+          />
+           <Line
+            dataKey="generation"
+            type="monotone"
+            stroke="var(--color-generation)"
+            strokeWidth={2}
+            dot={true}
+            name="Generation"
           />
         </LineChart>
       </ChartContainer>

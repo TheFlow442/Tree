@@ -1,4 +1,3 @@
-
 import type { SwitchState, HistoricalDataPoint, EnergyData } from '@/lib/types';
 
 export const INITIAL_ENERGY_DATA: EnergyData = {
@@ -21,16 +20,16 @@ export const INITIAL_SWITCHES: SwitchState[] = [
 ];
 
 export const HISTORICAL_DATA: HistoricalDataPoint[] = [
-  { month: 'Jan', "Energy Consumption (kWh)": 186 },
-  { month: 'Feb', "Energy Consumption (kWh)": 205 },
-  { month: 'Mar', "Energy Consumption (kWh)": 237 },
-  { month: 'Apr', "Energy Consumption (kWh)": 173 },
-  { month: 'May', "Energy Consumption (kWh)": 209 },
-  { month: 'Jun', "Energy Consumption (kWh)": 250 },
-  { month: 'Jul', "Energy Consumption (kWh)": 280 },
-  { month: 'Aug', "Energy Consumption (kWh)": 260 },
-  { month: 'Sep', "Energy Consumption (kWh)": 220 },
-  { month: 'Oct', "Energy Consumption (kWh)": 190 },
-  { month: 'Nov', "Energy Consumption (kWh)": 170 },
-  { month: 'Dec', "Energy Consumption (kWh)": 210 },
+  { month: 'Jan', consumption: 186, generation: 220 },
+  { month: 'Feb', consumption: 205, generation: 240 },
+  { month: 'Mar', consumption: 237, generation: 280 },
+  { month: 'Apr', consumption: 173, generation: 300 },
+  { month: 'May', consumption: 209, generation: 320 },
+  { month: 'Jun', consumption: 250, generation: 350 },
+  { month: 'Jul', consumption: 280, generation: 360 },
+  { month: 'Aug', consumption: 260, generation: 340 },
+  { month: 'Sep', consumption: 220, generation: 290 },
+  { month: 'Oct', consumption: 190, generation: 250 },
+  { month: 'Nov', consumption: 170, generation: 210 },
+  { month: 'Dec', consumption: 210, generation: 190 },
 ];

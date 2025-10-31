@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { runEnergyPrediction, runIntelligentSwitchControl, updateSwitchState, getSwitchStates } from '@/app/actions';
 import { INITIAL_ENERGY_DATA, INITIAL_SWITCHES } from '@/lib/data';
@@ -24,6 +24,96 @@ export function Dashboard() {
   const { toast } = useToast();
   const database = useDatabase();
 
+  // Ref to prevent multiple optimizations for the same low-battery event
+  const lowBatteryOptimizationTriggered = useRef(false);
+
+  const handlePrediction = useCallback(async () => {
+    setIsPredictionLoading(true);
+    setAiReasoning('');
+    const result = await runEnergyPrediction();
+    if (result.success && result.data) {
+      setPrediction(result.data);
+      toast({
+        title: "Prediction Ready",
+        description: "Future energy consumption has been forecasted.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Prediction Failed",
+        description: result.error,
+      });
+    }
+    setIsPredictionLoading(false);
+  }, [toast]);
+
+  const updateAllSwitches = useCallback(async (newSwitchStates: boolean[]) => {
+    const updatedSwitches = switches.map((s, i) => ({
+      ...s,
+      state: newSwitchStates[i],
+    }));
+
+    // Optimistically update UI
+    setSwitches(updatedSwitches);
+
+    // Call server action for each switch
+    for (const s of updatedSwitches) {
+      // no need to await, fire and forget
+      updateSwitchState(s.id, s.name, s.state);
+    }
+  }, [switches]);
+
+  const handleOptimization = useCallback(async (isAutomatic: boolean = false) => {
+    if (!prediction) {
+      // Run prediction if it's not available yet
+      await handlePrediction();
+    }
+    // Use a function to get the latest prediction state
+    setPrediction(latestPrediction => {
+      if (!latestPrediction) {
+        toast({
+          variant: "destructive",
+          title: "Cannot Optimize",
+          description: "Prediction data is not available. Please try again.",
+        });
+        return latestPrediction;
+      }
+      
+      setIsOptimizing(true);
+      runIntelligentSwitchControl({
+        ...energyData,
+        powerConsumption: energyData.power,
+        predictedUsage: latestPrediction.predictedConsumption,
+        userPreferences,
+        userUsagePatterns: latestPrediction.userUsagePatterns,
+      }).then(result => {
+        if (result.success && result.data) {
+          const { switch1State, switch2State, switch3State, switch4State, switch5State, reasoning } = result.data;
+          const newSwitchStates = [switch1State, switch2State, switch3State, switch4State, switch5State];
+          
+          updateAllSwitches(newSwitchStates);
+          
+          setAiReasoning(reasoning);
+          toast({
+            title: isAutomatic ? "Low Battery Action" : "Optimization Complete",
+            description: isAutomatic ? "AI has adjusted switches to conserve power." : "Switches have been adjusted intelligently.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Optimization Failed",
+            description: result.error,
+          });
+        }
+        setIsOptimizing(false);
+      });
+      
+      return latestPrediction;
+    });
+
+  }, [prediction, energyData, userPreferences, handlePrediction, toast, updateAllSwitches]);
+
+
   useEffect(() => {
     handlePrediction(); // Initial prediction on load
 
@@ -46,7 +136,7 @@ export function Dashboard() {
     };
     initialFetch();
 
-  }, []);
+  }, [handlePrediction]);
 
   const energyDataRef = useMemoFirebase(() => database ? ref(database, 'app/energyData') : null, [database]);
   const switchStatesRef = useMemoFirebase(() => database ? ref(database, 'app/switchStates') : null, [database]);
@@ -60,20 +150,33 @@ export function Dashboard() {
         const latestKey = Object.keys(data).sort().pop();
         if (latestKey) {
             const latestData = data[latestKey];
-             setEnergyData(prev => ({
-                ...prev, // keep fields not sent by device
-                voltage: latestData.voltage ?? prev.voltage,
-                current: latestData.current ?? prev.current,
-                batteryLevel: latestData.batteryLevel ?? prev.batteryLevel,
-                power: (latestData.voltage && latestData.current) ? latestData.voltage * latestData.current : prev.power,
-                temperature: latestData.temperature ?? prev.temperature,
-                humidity: latestData.humidity ?? prev.humidity,
-             }));
+             setEnergyData(prev => {
+                const newBatteryLevel = latestData.batteryLevel ?? prev.batteryLevel;
+                const newEnergyData = {
+                    ...prev, // keep fields not sent by device
+                    voltage: latestData.voltage ?? prev.voltage,
+                    current: latestData.current ?? prev.current,
+                    batteryLevel: newBatteryLevel,
+                    power: (latestData.voltage && latestData.current) ? latestData.voltage * latestData.current : prev.power,
+                    temperature: latestData.temperature ?? prev.temperature,
+                    humidity: latestData.humidity ?? prev.humidity,
+                };
+
+                // Automatic low-battery optimization logic
+                if (newBatteryLevel < 40 && !lowBatteryOptimizationTriggered.current) {
+                    lowBatteryOptimizationTriggered.current = true; // Set flag to prevent re-triggering
+                    handleOptimization(true); // isAutomatic = true
+                } else if (newBatteryLevel >= 40) {
+                    lowBatteryOptimizationTriggered.current = false; // Reset flag when battery is healthy
+                }
+                
+                return newEnergyData;
+             });
         }
       }
     });
     return () => unsubscribe();
-  }, [energyDataRef]);
+  }, [energyDataRef, handleOptimization]);
 
    useEffect(() => {
     if (!switchStatesRef) return;
@@ -97,82 +200,6 @@ export function Dashboard() {
     });
     return () => unsubscribe();
   }, [switchStatesRef]);
-
-  const handlePrediction = async () => {
-    setIsPredictionLoading(true);
-    setAiReasoning('');
-    const result = await runEnergyPrediction();
-    if (result.success && result.data) {
-      setPrediction(result.data);
-      toast({
-        title: "Prediction Ready",
-        description: "Future energy consumption has been forecasted.",
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Prediction Failed",
-        description: result.error,
-      });
-    }
-    setIsPredictionLoading(false);
-  };
-  
-  const updateAllSwitches = useCallback(async (newSwitchStates: boolean[]) => {
-    const updatedSwitches = switches.map((s, i) => ({
-      ...s,
-      state: newSwitchStates[i],
-    }));
-
-    // Optimistically update UI
-    setSwitches(updatedSwitches);
-
-    // Call server action for each switch
-    for (const s of updatedSwitches) {
-      // no need to await, fire and forget
-      updateSwitchState(s.id, s.name, s.state);
-    }
-  }, [switches]);
-
-
-  const handleOptimization = async () => {
-    if (!prediction) {
-      toast({
-        variant: "destructive",
-        title: "Cannot Optimize",
-        description: "Please predict energy consumption first.",
-      });
-      return;
-    }
-    setIsOptimizing(true);
-    const result = await runIntelligentSwitchControl({
-      ...energyData,
-      powerConsumption: energyData.power,
-      predictedUsage: prediction.predictedConsumption,
-      userPreferences,
-      userUsagePatterns: prediction.userUsagePatterns,
-    });
-
-    if (result.success && result.data) {
-      const { switch1State, switch2State, switch3State, switch4State, switch5State, reasoning } = result.data;
-      const newSwitchStates = [switch1State, switch2State, switch3State, switch4State, switch5State];
-      
-      await updateAllSwitches(newSwitchStates);
-      
-      setAiReasoning(reasoning);
-      toast({
-        title: "Optimization Complete",
-        description: "Switches have been adjusted intelligently.",
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Optimization Failed",
-        description: result.error,
-      });
-    }
-    setIsOptimizing(false);
-  };
 
   const handleSwitchChange = async (id: number, checked: boolean) => {
     const targetSwitch = switches.find(s => s.id === id);
@@ -206,7 +233,7 @@ export function Dashboard() {
           isPredictionAvailable={!!prediction}
           onSwitchChange={handleSwitchChange}
           onPreferencesChange={setUserPreferences}
-          onOptimize={handleOptimization}
+          onOptimize={() => handleOptimization(false)}
         />
       </div>
 

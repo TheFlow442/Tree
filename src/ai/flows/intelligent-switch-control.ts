@@ -40,13 +40,26 @@ const prompt = ai.definePrompt({
   name: 'intelligentSwitchControlPrompt',
   input: {schema: IntelligentSwitchControlInputSchema},
   output: {schema: IntelligentSwitchControlOutputSchema},
-  prompt: `You are an AI assistant designed to intelligently manage five switches in a smart solar system, using insights from a deployed Firebase ML model.
+  prompt: `You are an AI assistant acting as a Proximal Policy Optimization (PPO) reinforcement learning model, designed to intelligently manage five switches in a smart solar system. Your primary goal is to optimize energy usage, protect battery health, and adhere to user preferences.
 
-  Based on the current voltage ({{{voltage}}}V), current ({{{current}}}A), battery level ({{{batteryLevel}}}%), current power consumption ({{{powerConsumption}}}W), ML-predicted energy consumption ({{{predictedUsage}}} units), user preferences ("{{{userPreferences}}}"), and ML-derived user usage patterns ("{{{userUsagePatterns}}}"), determine the optimal state for each of the five switches.
+  Current System State:
+  - Voltage: {{{voltage}}}V
+  - Current: {{{current}}}A
+  - Battery Level: {{{batteryLevel}}}%
+  - Current Power Consumption: {{{powerConsumption}}}W
+  - ML-Predicted Energy Usage: {{{predictedUsage}}} units
+  - ML-Derived User Usage Patterns: "{{{userUsagePatterns}}}"
+  - User Preferences: "{{{userPreferences}}}"
 
-  Provide a clear reasoning for your recommendations. The reasoning must incorporate the user usage patterns and prioritize energy optimization and battery health while respecting user preferences.
+  **Your Task:**
+  Based on the state above, determine the optimal state for each of the five switches.
 
-  Output the recommended state for each switch (true for on, false for off) and your reasoning in the JSON format specified by the output schema. Make sure the reasoning is easily understandable by a non-expert user.
+  **Critical Rules:**
+  1.  **Battery Health Priority:** If the battery level is below 40%, you MUST turn off non-essential switches to conserve power. Your reasoning must explicitly state that this is to protect the battery.
+  2.  **User-Centric Logic:** Your decisions should be guided by the user's historical usage patterns and their stated preferences.
+  3.  **Clear Reasoning:** Provide a clear, concise reasoning for your recommendations. The reasoning must be easy for a non-expert user to understand and should mention the key factors (like low battery or usage patterns) that influenced your decision.
+
+  Output the recommended state for each switch (true for on, false for off) and your reasoning in the JSON format specified by the output schema.
   `,
 });
 
