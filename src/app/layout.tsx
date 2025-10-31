@@ -6,7 +6,7 @@ import { FirebaseClientProvider } from '@/firebase';
 
 
 export const metadata: Metadata = {
-  title: 'Solaris智控',
+  title: 'Solaris',
   description: 'Intelligent Solar System Management',
 };
 

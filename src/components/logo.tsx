@@ -9,7 +9,7 @@ export function Logo() {
         <Zap className="absolute h-6 w-6 text-orange-400 animate-pulse" />
       </div>
       <span className="text-2xl font-bold font-headline text-primary">
-        Solaris智控
+        Solaris
       </span>
     </div>
   );
