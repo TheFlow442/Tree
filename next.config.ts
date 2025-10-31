@@ -35,3 +35,9 @@ const nextConfig: NextConfig = {
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**',
+      },
+    ],
+  },
+};
+
+export default withPWA(nextConfig);
