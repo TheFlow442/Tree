@@ -4,7 +4,7 @@
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { HOURLY_USAGE_DATA } from '@/lib/data';
-import { getDatabase, ref, get, child } from 'firebase/database';
+import { getDatabase, ref, get, child, set } from 'firebase/database';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
 import { randomUUID } from 'crypto';
@@ -47,34 +47,18 @@ export async function runEnergyPrediction() {
 
 export async function generateApiKey() {
   try {
-    const databaseUrl = firebaseConfig.databaseURL;
-    if (!databaseUrl) {
-      throw new Error('databaseURL is not defined in firebaseConfig');
-    }
-    const secret = process.env.FIREBASE_DATABASE_SECRET;
-     if (!secret) {
-      console.error('FIREBASE_DATABASE_SECRET is not set in environment variables.');
-      throw new Error('Server configuration error: Missing database secret.');
+    const dbRef = ref(database);
+    const apiKeyRef = child(dbRef, 'app/apiKey');
+    
+    const snapshot = await get(apiKeyRef);
+    if (snapshot.exists() && snapshot.val()) {
+      return { success: true, data: { apiKey: snapshot.val() } };
     }
 
-    const apiKey = randomUUID();
-    const path = `app/apiKey.json?auth=${secret}`;
-    const url = `${databaseUrl}/${path}`;
+    const newApiKey = randomUUID();
+    await set(apiKeyRef, newApiKey);
 
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(apiKey),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to write API key to database.');
-    }
-
-    return { success: true, data: { apiKey } };
+    return { success: true, data: { apiKey: newApiKey } };
   } catch (error: any) {
     console.error('Error generating API key:', error);
     return { success: false, error: error.message || 'Failed to generate API key.' };

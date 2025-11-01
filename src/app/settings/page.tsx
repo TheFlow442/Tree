@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTheme } from "next-themes"
 import { firebaseConfig } from '@/firebase/config';
-import { generateApiKey, getApiKey, simulateBatteryLevel } from '@/app/actions';
+import { generateApiKey } from '@/app/actions';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { LineChart, History, Settings, Wifi, Loader2, Moon, Sun, KeyRound, Copy, Check, Info, BeakerIcon } from 'lucide-react';
@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { simulateBatteryLevel } from '@/app/actions';
+
 
 export default function SettingsPage() {
   const { setTheme } = useTheme()
@@ -31,7 +33,7 @@ export default function SettingsPage() {
     async function fetchKey() {
       setIsLoading(true);
       try {
-        const result = await getApiKey();
+        const result = await generateApiKey();
         if(result.success) {
           setDeviceApiKey(result.data.apiKey);
         } else {
@@ -53,34 +55,6 @@ export default function SettingsPage() {
     }
     fetchKey();
   }, [toast]);
-
-  const handleGenerateKey = async () => {
-    setIsGenerating(true);
-    try {
-      const result = await generateApiKey();
-      if (result.success && result.data?.apiKey) {
-        setDeviceApiKey(result.data.apiKey);
-        toast({
-          title: "Device API Key Generated",
-          description: "Your new device API key is ready.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Generation Failed",
-          description: result.error || 'An unknown error occurred.',
-        });
-      }
-    } catch(e: any) {
-       toast({
-        variant: "destructive",
-        title: "Generation Failed",
-        description: e.message || 'An unknown error occurred.',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
   
   const copyToClipboard = (key: string, type: 'device' | 'project') => {
     navigator.clipboard.writeText(key);
@@ -228,23 +202,16 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground pt-2">
-                    You don't have a Device API key yet. Generate one below.
-                  </p>
+                  <div className='pt-2'>
+                     <p className="text-sm text-destructive font-semibold">
+                      Could not find a Device API Key. Please ensure your database is set up correctly.
+                    </p>
+                  </div>
                 )}
                  <p className="text-sm text-muted-foreground">
                   Use this key in your ESP32 firmware to identify your device. It should be sent as the `Device-API-Key` header.
                 </p>
               </div>
-
-              <Button onClick={handleGenerateKey} disabled={isGenerating}>
-                {isGenerating ? (
-                  <Loader2 className="mr-2 animate-spin" />
-                ) : (
-                  <KeyRound className="mr-2" />
-                )}
-                {isGenerating ? 'Generating...' : (deviceApiKey ? 'Generate New Device Key' : 'Generate Device API Key')}
-              </Button>
 
               <div className="space-y-2 pt-4 border-t">
                  <Label htmlFor="project-api-key" className="flex items-center gap-2">
