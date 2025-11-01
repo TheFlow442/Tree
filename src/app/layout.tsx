@@ -8,6 +8,7 @@ import { FirebaseClientProvider } from '@/firebase';
 export const metadata: Metadata = {
   title: 'Solaris',
   description: 'Intelligent Solar System Management',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
