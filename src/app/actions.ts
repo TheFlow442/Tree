@@ -142,3 +142,48 @@ export async function getSwitchStates() {
     return { success: false, error: error.message || 'Failed to fetch switch states.' };
   }
 }
+
+export async function simulateBatteryLevel(level: number) {
+  try {
+    const databaseUrl = firebaseConfig.databaseURL;
+    if (!databaseUrl) {
+      throw new Error('databaseURL is not defined in firebaseConfig');
+    }
+    const secret = process.env.FIREBASE_DATABASE_SECRET;
+    if (!secret) {
+      console.error('FIREBASE_DATABASE_SECRET is not set in environment variables.');
+      throw new Error('Server configuration error: Missing database secret.');
+    }
+
+    const path = `app/energyData.json?auth=${secret}`;
+    const url = `${databaseUrl}/${path}`;
+
+    // Create a new entry with the simulated battery level and current timestamp
+    const response = await fetch(url, {
+      method: 'POST', // POST to create a new unique entry
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        batteryLevel: level,
+        timestamp: new Date().toISOString(),
+        // Add other fields with default/null values if needed by the structure
+        voltage: 230,
+        current: 0,
+        power: 0,
+        temperature: 25,
+        humidity: 60,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to simulate battery level.');
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error simulating battery level:', error);
+    return { success: false, error: error.message || 'Failed to simulate battery level.' };
+  }
+}

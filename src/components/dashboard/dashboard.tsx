@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,11 +13,6 @@ import { PredictionAnalytics } from './prediction-analytics';
 import type { PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
 import { useDatabase, useMemoFirebase } from '@/firebase';
 import { onValue, ref } from 'firebase/database';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { BeakerIcon } from 'lucide-react';
 
 export function Dashboard() {
   const [energyData, setEnergyData] = useState<EnergyData>(INITIAL_ENERGY_DATA);
@@ -26,7 +22,6 @@ export function Dashboard() {
   const [isPredictionLoading, setIsPredictionLoading] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [aiReasoning, setAiReasoning] = useState('');
-  const [manualBatteryInput, setManualBatteryInput] = useState('');
   const { toast } = useToast();
   const database = useDatabase();
 
@@ -118,41 +113,6 @@ export function Dashboard() {
     });
 
   }, [prediction, energyData, userPreferences, handlePrediction, toast, updateAllSwitches]);
-
-  const setBatteryLevel = (level: number) => {
-     setEnergyData(prev => {
-        const newBatteryLevel = level;
-        const newEnergyData = { ...prev, batteryLevel: newBatteryLevel };
-
-        // Automatic low-battery optimization logic
-        if (newBatteryLevel < 40 && !lowBatteryOptimizationTriggered.current) {
-            lowBatteryOptimizationTriggered.current = true; // Set flag to prevent re-triggering
-            handleOptimization(true); // isAutomatic = true
-        } else if (newBatteryLevel >= 40) {
-            lowBatteryOptimizationTriggered.current = false; // Reset flag when battery is healthy
-        }
-        
-        return newEnergyData;
-     });
-  }
-
-  const handleManualBatteryUpdate = () => {
-    const newLevel = parseFloat(manualBatteryInput);
-    if (!isNaN(newLevel) && newLevel >= 0 && newLevel <= 100) {
-      setBatteryLevel(newLevel);
-      toast({
-        title: "Battery Level Simulated",
-        description: `Battery level manually set to ${newLevel}%.`,
-      });
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Invalid Input",
-        description: "Please enter a number between 0 and 100.",
-      });
-    }
-  }
-
 
   useEffect(() => {
     handlePrediction(); // Initial prediction on load
@@ -283,30 +243,6 @@ export function Dashboard() {
           isLoading={isPredictionLoading}
           onPredict={handlePrediction}
         />
-        <Card className="shadow-lg bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <BeakerIcon className="text-primary w-6 h-6" />
-              <CardTitle className="font-headline text-xl">Testing</CardTitle>
-            </div>
-            <CardDescription>Manually set battery % to test AI logic.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="manual-battery">Simulate Battery Level (%)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="manual-battery"
-                  type="number"
-                  placeholder="e.g., 30"
-                  value={manualBatteryInput}
-                  onChange={(e) => setManualBatteryInput(e.target.value)}
-                />
-                <Button onClick={handleManualBatteryUpdate}>Set</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         <UsageHistory />
       </div>
     </div>

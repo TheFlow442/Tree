@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTheme } from "next-themes"
 import { firebaseConfig } from '@/firebase/config';
-import { generateApiKey, getApiKey } from '@/app/actions';
+import { generateApiKey, getApiKey, simulateBatteryLevel } from '@/app/actions';
 import { Header } from '@/components/header';
 import { SidebarProvider, Sidebar, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { LineChart, History, Settings, Wifi, Loader2, Moon, Sun, KeyRound, Copy, Check, Info } from 'lucide-react';
+import { LineChart, History, Settings, Wifi, Loader2, Moon, Sun, KeyRound, Copy, Check, Info, BeakerIcon } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const [deviceApiKey, setDeviceApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [manualBatteryInput, setManualBatteryInput] = useState('');
   const [hasCopiedDeviceKey, setHasCopiedDeviceKey] = useState(false);
   const [hasCopiedProjectKey, setHasCopiedProjectKey] = useState(false);
   const { toast } = useToast();
@@ -92,6 +94,34 @@ export default function SettingsPage() {
     toast({ title: "Copied to clipboard!" });
   };
 
+  const handleManualBatteryUpdate = async () => {
+    const newLevel = parseFloat(manualBatteryInput);
+    if (isNaN(newLevel) || newLevel < 0 || newLevel > 100) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid Input',
+        description: 'Please enter a number between 0 and 100.',
+      });
+      return;
+    }
+
+    setIsSimulating(true);
+    const result = await simulateBatteryLevel(newLevel);
+    if (result.success) {
+      toast({
+        title: 'Battery Level Simulated',
+        description: `Battery level is now being set to ${newLevel}%. Check the dashboard.`,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Simulation Failed',
+        description: result.error || 'Could not simulate battery level.',
+      });
+    }
+    setIsSimulating(false);
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -140,6 +170,33 @@ export default function SettingsPage() {
                  <Button variant="outline" onClick={() => setTheme("dark")}>
                   <Moon className="mr-2" /> Dark
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <BeakerIcon className="text-primary w-6 h-6" />
+                <CardTitle className="font-headline text-xl">Testing</CardTitle>
+              </div>
+              <CardDescription>Manually set battery % to test AI logic on the dashboard.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="manual-battery">Simulate Battery Level (%)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="manual-battery"
+                    type="number"
+                    placeholder="e.g., 30"
+                    value={manualBatteryInput}
+                    onChange={(e) => setManualBatteryInput(e.target.value)}
+                  />
+                  <Button onClick={handleManualBatteryUpdate} disabled={isSimulating}>
+                    {isSimulating && <Loader2 className="mr-2 animate-spin" />}
+                    Set
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
