@@ -16,7 +16,7 @@ export type SwitchState = {
 };
 
 export type HistoricalDataPoint = {
-  month: string;
+  time: string;
   consumption: number;
   generation: number;
 };

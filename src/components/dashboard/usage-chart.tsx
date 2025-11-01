@@ -35,11 +35,16 @@ export function UsageChart({ data }: UsageChartProps) {
         >
           <CartesianGrid vertical={false} />
           <XAxis
-            dataKey="month"
+            dataKey="time"
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            tickFormatter={(value) => value.slice(0, 3)}
+            tickFormatter={(value, index) => {
+              if (index % 3 === 0) {
+                return value;
+              }
+              return "";
+            }}
           />
           <YAxis
              tickLine={false}
@@ -54,7 +59,7 @@ export function UsageChart({ data }: UsageChartProps) {
             type="monotone"
             stroke="var(--color-consumption)"
             strokeWidth={2}
-            dot={true}
+            dot={false}
             name="Consumption"
           />
            <Line
@@ -62,7 +67,7 @@ export function UsageChart({ data }: UsageChartProps) {
             type="monotone"
             stroke="var(--color-generation)"
             strokeWidth={2}
-            dot={true}
+            dot={false}
             name="Generation"
           />
         </LineChart>

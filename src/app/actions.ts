@@ -3,7 +3,7 @@
 
 import { intelligentSwitchControl, IntelligentSwitchControlInput } from '@/ai/flows/intelligent-switch-control';
 import { predictEnergyConsumption, PredictEnergyConsumptionOutput } from '@/ai/flows/predict-energy-consumption';
-import { HISTORICAL_DATA } from '@/lib/data';
+import { HOURLY_USAGE_DATA } from '@/lib/data';
 import { getDatabase, ref, get, child } from 'firebase/database';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
@@ -33,7 +33,7 @@ export async function runIntelligentSwitchControl(input: IntelligentSwitchContro
 
 export async function runEnergyPrediction() {
   try {
-    const historicalDataString = JSON.stringify(HISTORICAL_DATA);
+    const historicalDataString = JSON.stringify(HOURLY_USAGE_DATA);
     const result = await predictEnergyConsumption({
       historicalData: historicalDataString,
       modelName: 'energy_consumption_v1',

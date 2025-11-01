@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UsageChart } from './usage-chart';
-import { HISTORICAL_DATA } from '@/lib/data';
+import { HOURLY_USAGE_DATA } from '@/lib/data';
 import { Activity } from 'lucide-react';
 
 export function UsageHistory() {
@@ -11,10 +11,10 @@ export function UsageHistory() {
           <Activity className="text-primary w-6 h-6" />
           <CardTitle className="font-headline text-xl">Energy Usage History</CardTitle>
         </div>
-        <CardDescription>Monthly energy consumption over the last year.</CardDescription>
+        <CardDescription>24-hour energy consumption and generation.</CardDescription>
       </CardHeader>
       <CardContent>
-        <UsageChart data={HISTORICAL_DATA} />
+        <UsageChart data={HOURLY_USAGE_DATA} />
       </CardContent>
     </Card>
   );

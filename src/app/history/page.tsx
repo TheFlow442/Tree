@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { HISTORICAL_DATA } from '@/lib/data';
+import { HOURLY_USAGE_DATA } from '@/lib/data';
 import { downloadCSV } from '@/lib/csv';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 
@@ -40,10 +40,10 @@ export default function HistoryPage() {
   };
 
   const handleDownload = () => {
-    downloadCSV(HISTORICAL_DATA, 'historical_energy_data.csv');
+    downloadCSV(HOURLY_USAGE_DATA, 'hourly_energy_data.csv');
     toast({
       title: "Download Started",
-      description: "Downloading historical_energy_data.csv.",
+      description: "Downloading hourly_energy_data.csv.",
     });
   };
 
@@ -97,7 +97,7 @@ export default function HistoryPage() {
               </div>
               <div className="space-y-2">
                 <h3 className="font-semibold">Download Dataset</h3>
-                <p className="text-sm text-muted-foreground">Download the historical energy consumption data.</p>
+                <p className="text-sm text-muted-foreground">Download the hourly energy consumption data.</p>
                 <Button onClick={handleDownload} variant="secondary">
                   <Download className="mr-2" /> Download CSV
                 </Button>
@@ -107,22 +107,22 @@ export default function HistoryPage() {
            <Card>
             <CardHeader>
               <CardTitle>Historical Data</CardTitle>
-              <CardDescription>A view of the monthly energy data.</CardDescription>
+              <CardDescription>A view of the hourly energy data for the last 24 hours.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableCaption>A list of your recent energy records.</TableCaption>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[100px]">Month</TableHead>
+                    <TableHead className="w-[100px]">Time</TableHead>
                     <TableHead className="text-right">Consumption (kWh)</TableHead>
                     <TableHead className="text-right">Generation (kWh)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {HISTORICAL_DATA.map((data) => (
-                    <TableRow key={data.month}>
-                      <TableCell className="font-medium">{data.month}</TableCell>
+                  {HOURLY_USAGE_DATA.map((data) => (
+                    <TableRow key={data.time}>
+                      <TableCell className="font-medium">{data.time}</TableCell>
                       <TableCell className="text-right">{data.consumption}</TableCell>
                       <TableCell className="text-right">{data.generation}</TableCell>
                     </TableRow>
