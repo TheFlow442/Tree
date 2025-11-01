@@ -47,16 +47,40 @@ export async function runEnergyPrediction() {
 
 export async function generateApiKey() {
   try {
-    const dbRef = ref(database);
-    const apiKeyRef = child(dbRef, 'app/apiKey');
+    const secret = process.env.FIREBASE_DATABASE_SECRET;
+    if (!secret) {
+      throw new Error('Server configuration error: Missing database secret.');
+    }
+    const databaseUrl = firebaseConfig.databaseURL;
+    const readPath = `app/apiKey.json?auth=${secret}`;
+    const readUrl = `${databaseUrl}/${readPath}`;
+
+    // First, try to fetch the existing key
+    const readResponse = await fetch(readUrl);
     
-    const snapshot = await get(apiKeyRef);
-    if (snapshot.exists() && snapshot.val()) {
-      return { success: true, data: { apiKey: snapshot.val() } };
+    // The key might not exist, which can return a 404 or a null body, which is OK.
+    if (readResponse.ok) {
+        const existingKey = await readResponse.json();
+        if (existingKey) {
+            return { success: true, data: { apiKey: existingKey } };
+        }
     }
 
+    // If no key exists, generate and write a new one
     const newApiKey = randomUUID();
-    await set(apiKeyRef, newApiKey);
+    const writePath = `app/apiKey.json?auth=${secret}`;
+    const writeUrl = `${databaseUrl}/${writePath}`;
+    
+    const writeResponse = await fetch(writeUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newApiKey),
+    });
+
+    if (!writeResponse.ok) {
+        const errorData = await writeResponse.json();
+        throw new Error(errorData.error || 'Failed to write new API key.');
+    }
 
     return { success: true, data: { apiKey: newApiKey } };
   } catch (error: any) {
