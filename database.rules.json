@@ -2,10 +2,10 @@
 {
   "rules": {
     "app": {
-      // The API key can be read by any authenticated user.
+      // The API key can be read and written by any authenticated user.
       "apiKey": {
         ".read": "auth != null",
-        ".write": false
+        ".write": "auth != null"
       },
       // Authenticated users (including anonymous) can control the switches.
       "switchStates": {
