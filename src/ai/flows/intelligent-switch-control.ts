@@ -55,13 +55,13 @@ const prompt = ai.definePrompt({
   **Your Task:**
   Based on the state above, determine the optimal state for each of the five switches by following these rules in order of priority.
 
-  **Critical Rules Hierarchy:**
-  1.  **CRITICAL (Below 10%):** If the battery level is below 10%, you MUST turn off ALL switches to protect the battery. This overrides all other rules and user preferences.
-  2.  **VERY LOW (10% - 20%):** If the battery level is between 10% and 20%, you MUST turn on only ONE essential switch. Identify the most critical switch based on user patterns and preferences.
-  3.  **LOW (30% - 50%):** If the battery level is between 30% and 50%, you MUST turn on a maximum of TWO switches. Prioritize essential switches based on user patterns and preferences.
-  4.  **HEALTHY (60% - 70%):** If the battery level is between 60% and 70%, you can turn on all switches, but you should still optimize their states based on user preferences and usage patterns to save energy.
-  5.  **GENERAL (Below 40%):** As a general guideline, if the battery level is below 40%, you should be conservative and turn off non-essential switches. This rule helps inform decisions in the 30-50% range.
-  6.  **User-Centric Logic:** For all other battery levels, your decisions should be guided by the user's historical usage patterns and their stated preferences.
+  **Critical Rules Hierarchy (Follow this strictly):**
+  1.  **CRITICAL (Below 10%):** If the battery level is below 10%, you MUST turn off ALL switches to protect the battery. This rule is absolute and overrides all other rules, user preferences, and usage patterns.
+  2.  **VERY LOW (10% - 20%):** If the battery level is between 10% and 20% (inclusive), you MUST turn on only ONE essential switch. Identify the single most critical switch based on user patterns and preferences and turn it on. All other switches must be OFF.
+  3.  **LOW (30% - 50%):** If the battery level is between 30% and 50% (inclusive), you MUST turn on a maximum of TWO switches. Prioritize the two most essential switches based on user patterns and preferences.
+  4.  **HEALTHY (60% - 70%):** If the battery level is between 60% and 70% (inclusive), you can turn on all switches, but you should still optimize their states based on user preferences and usage patterns to save energy where possible.
+  5.  **GENERAL (Below 40%):** As a general guideline, if the battery level is below 40%, you should be conservative and turn off non-essential switches. This rule helps inform decisions in the 30-50% range but is secondary to the strict rules above.
+  6.  **User-Centric Logic:** For all other battery levels not covered by the rules above, your decisions should be guided by the user's historical usage patterns and their stated preferences.
   7.  **Clear Reasoning:** Provide a clear, concise reasoning for your recommendations. The reasoning must explicitly state which battery rule influenced your decision.
 
   Output the recommended state for each switch (true for on, false for off) and your reasoning in the JSON format specified by the output schema.
